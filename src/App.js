@@ -2207,8 +2207,8 @@ function AdminDashboard({ user, onLogout }) {
   const [showQR, setShowQR] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [editingBarber, setEditingBarber] = useState(null);
-
-  const shopUrl = shop ? `https://zmx78s.csb.app/shop/${shop.slug}` : "";
+ 
+const shopUrl = shop ? window.location.origin + "/shop/" + shop.slug : "";
 
   const loadQueue = useCallback(async (shopId) => {
     const { data } = await supabase
