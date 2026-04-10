@@ -402,7 +402,6 @@ function HeroPage({onNavigate,user}){
   );
 }
 
-function T_body({children}){ return null; } // placeholder
 const T_body = {fontSize:17,color:C.textMid,lineHeight:1.7};
 
 function FeatureCard({icon,title,desc,color}){
