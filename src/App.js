@@ -404,7 +404,7 @@ function HeroPage({onNavigate,user}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,maxWidth:960,margin:"0 auto"}}>
             {[
               {name:"Pro",price:"£29",period:"/month",desc:"For growing barbershops",features:["1 shop","Unlimited barbers","Unlimited queue entries","Custom QR code branding","Email + SMS notifications","Advanced analytics","Priority support"],popular:true,cta:"Start 7-day free trial",ctaV:"grad"},
-              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses",features:["Multiple shops","Unlimited barbers","Everything in Pro","Multi-location dashboard","Custom domain","Dedicated support","API access"],popular:false,cta:"Start 7-day free trial",ctaV:"primary"},
+              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses",features:["Multiple shops","Unlimited barbers","Everything in Pro","Multi-location dashboard","Custom domain","Dedicated support","API access"],popular:false,cta:"Contact us",ctaV:"outline"},
             ].map(p=>(
               <PricingCard key={p.name} {...p} onNavigate={onNavigate}/>
             ))}
@@ -829,7 +829,7 @@ function PricingPage({onNavigate,user}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,maxWidth:960,margin:"0 auto"}}>
             {[
               {name:"Pro",price:"£29",period:"/month",desc:"For growing barbershops that want more power and customisation.",features:["1 shop location","Unlimited barbers","Unlimited queue entries","Custom QR code branding","Email + SMS notifications","Advanced analytics","Earnings reporting","Priority support","Remove ZentriqFlow branding"],popular:true,cta:"Start 7-day free trial",ctaV:"grad"},
-              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and chains.",features:["Multiple shop locations","Unlimited barbers","Everything in Pro","Multi-location dashboard","Centralised earnings view","Custom domain","Dedicated account manager","API access","White-label option"],popular:false,cta:"Start 7-day free trial",ctaV:"primary"},
+              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and chains.",features:["Multiple shop locations","Unlimited barbers","Everything in Pro","Multi-location dashboard","Centralised earnings view","Custom domain","Dedicated account manager","API access","White-label option"],popular:false,cta:"Contact us",ctaV:"outline"},
             ].map(p=><PricingCard key={p.name} {...p} onNavigate={onNavigate}/>)}
           </div>
           <div style={{...S.card,maxWidth:780,margin:"3rem auto 0",padding:"2rem",background:C.indigoLight,border:`1px solid ${C.indigo}25`,textAlign:"center"}}>
@@ -1319,7 +1319,11 @@ function AdminDashboard({user,onLogout,onNavigate}){
   const shopUrl=shop?window.location.origin+"/shop/"+shop.slug:"";
 
   const loadQ=useCallback(async(sid)=>{
-    const {data}=await supabase.from("queue_entries").select("*,services(name,price,duration),barbers(name)").eq("shop_id",sid).not("status","eq","done").not("status","eq","cancelled").order("position",{ascending:true});
+    const {data}=await supabase.from("queue_entries")
+      .select("*,services(name,price,duration),barbers(name)")
+      .eq("shop_id",sid)
+      .in("status",["waiting","called","on_chair"])
+      .order("position",{ascending:true});
     setQueue(data||[]);
   },[]);
 
@@ -1400,7 +1404,7 @@ function AdminDashboard({user,onLogout,onNavigate}){
 
   async function callNext(){
     const next=queue.find(q=>q.status==="waiting");
-    if(!next) return alert("No customers waiting.");
+    if(!next) return alert("No customers waiting in the queue.");
     await supabase.from("queue_entries").update({status:"called",updated_at:new Date().toISOString()}).eq("id",next.id);
     loadQ(shop.id);
   }
@@ -1463,7 +1467,7 @@ function AdminDashboard({user,onLogout,onNavigate}){
 
         {/* Tabs */}
         <div style={{display:"flex",borderBottom:`2px solid ${C.border}`,marginBottom:"1.5rem"}}>
-          {["queue","barbers","services"].map(t=><button key={t} style={S.tab(tab===t)} onClick={()=>setTab(t)}>{t==="queue"?`Queue (${queue.length})`:t.charAt(0).toUpperCase()+t.slice(1)}</button>)}
+          {["queue","barbers","services"].map(t=><button key={t} style={S.tab(tab===t)} onClick={()=>setTab(t)}>{t==="queue"?`Queue (${queue.filter(q=>q.status!=="cancelled"&&q.status!=="done").length})`:t.charAt(0).toUpperCase()+t.slice(1)}</button>)}
         </div>
 
         {/* Queue Tab */}
