@@ -1436,13 +1436,17 @@ function AdminDashboard({user,onLogout,onNavigate}){
     <div style={S.app}>
       <div style={S.nav}><div style={S.navInner}>
         <Logo size="nav" onClick={()=>onNavigate("home")}/>
-        <div style={{fontWeight:600,color:C.navy,fontSize:15,position:"absolute",left:"50%",transform:"translateX(-50%)"}}>{shop.name}</div>
         <Btn v="outline" size="sm" onClick={onLogout}>Logout</Btn>
       </div></div>
 
       {/* Stats */}
-      <div style={{background:C.gradDark,padding:"1.5rem 0"}}>
+      <div style={{background:C.gradDark,padding:"1.25rem 0 1.5rem"}}>
         <div style={S.container}>
+          {/* Shop name sits here above the boxes */}
+          <div style={{marginBottom:"1rem"}}>
+            <div style={{color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Dashboard</div>
+            <div style={{color:"#fff",fontSize:20,fontWeight:800,letterSpacing:"-0.3px"}}>{shop.name}</div>
+          </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(100px,1fr))",gap:12}}>
             {[{n:waiting,l:"Waiting",c:"#60a5fa"},{n:called,l:"Called",c:"#fbbf24"},{n:onChair,l:"On Chair",c:"#34d399"},{n:`£${earn.toFixed(0)}`,l:"Today",c:"#a78bfa"}].map(s=>(
               <div key={s.l} style={{background:"rgba(255,255,255,0.08)",borderRadius:14,padding:"1rem",textAlign:"center"}}>
