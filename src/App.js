@@ -494,10 +494,17 @@ function Footer({onNavigate}){
           <div style={{gridColumn:"span 1"}}>
             <Logo size="nav" white={true} />
             <p style={{color:"rgba(255,255,255,0.4)",fontSize:14,marginTop:14,lineHeight:1.7}}>No booking. No stress. The modern queue system for walk-in businesses.</p>
-            <a href="https://www.instagram.com/zentriqflow?igsh=MXExYjgzNTNvcHVxaA%3D%3D&utm_source=qr" target="_blank" rel="noreferrer"
-              style={{display:"inline-flex",alignItems:"center",gap:8,marginTop:16,padding:"8px 16px",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.7)",textDecoration:"none",fontSize:14,fontWeight:600,border:"1px solid rgba(255,255,255,0.12)"}}>
-              📸 @zentriqflow
-            </a>
+            <div style={{display:"flex",gap:10,marginTop:16,flexWrap:"wrap"}}>
+              <a href="https://www.instagram.com/zentriqflow?igsh=MXExYjgzNTNvcHVxaA%3D%3D&utm_source=qr" target="_blank" rel="noreferrer"
+                style={{display:"inline-flex",alignItems:"center",gap:8,padding:"8px 16px",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.7)",textDecoration:"none",fontSize:14,fontWeight:600,border:"1px solid rgba(255,255,255,0.12)"}}>
+                📸 Instagram
+              </a>
+              <a href="https://www.tiktok.com/@zentriqflow?_r=1&_t=ZN-95SW5uNe3Ak" target="_blank" rel="noreferrer"
+                style={{display:"inline-flex",alignItems:"center",gap:8,padding:"8px 16px",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.7)",textDecoration:"none",fontSize:14,fontWeight:600,border:"1px solid rgba(255,255,255,0.12)"}}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+                TikTok
+              </a>
+            </div>
           </div>
           {[
             {title:"Product",links:[{l:"Features",v:"home"},{l:"How it works",v:"how-it-works"},{l:"Pricing",v:"pricing"},{l:"Get started",v:"login"}]},
@@ -693,6 +700,7 @@ function ContactPage({onNavigate,user}){
               {[
                 {icon:"📧",title:"Email",desc:"hello@zentriqflow.com",sub:"We reply within 2 hours",href:"mailto:hello@zentriqflow.com"},
                 {icon:"📸",title:"Instagram",desc:"@zentriqflow",sub:"DMs welcome — we're friendly!",href:"https://www.instagram.com/zentriqflow?igsh=MXExYjgzNTNvcHVxaA%3D%3D&utm_source=qr"},
+                {icon:"tiktok",title:"TikTok",desc:"@zentriqflow",sub:"Follow us for tips & updates",href:"https://www.tiktok.com/@zentriqflow?_r=1&_t=ZN-95SW5uNe3Ak"},
               ].map(c=>(
                 <a key={c.title} href={c.href} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>
                   <ContactCard {...c}/>
@@ -737,7 +745,11 @@ function ContactCard({icon,title,desc,sub}){
   const [h,setH]=useState(false);
   return (
     <div style={{...S.card,display:"flex",alignItems:"flex-start",gap:16,marginBottom:16,boxShadow:h?shadow.lg:shadow.sm,transform:h?"translateY(-2px)":"none"}} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}>
-      <div style={{width:44,height:44,borderRadius:12,background:C.indigoLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{icon}</div>
+      <div style={{width:44,height:44,borderRadius:12,background:C.indigoLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+        {icon==="tiktok"
+          ? <svg width="22" height="22" viewBox="0 0 24 24" fill={C.indigo}><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+          : icon}
+      </div>
       <div>
         <div style={{fontWeight:700,color:C.navy,fontSize:15}}>{title}</div>
         <div style={{fontWeight:600,color:C.indigo,fontSize:14,marginBottom:2}}>{desc}</div>
