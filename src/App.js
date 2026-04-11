@@ -225,6 +225,7 @@ function Navbar({onNavigate,user,currentView}){
           ))}
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <Btn v="ghost" onClick={()=>onNavigate("barber-login")} size="sm">✂️ Barber login</Btn>
           <Btn v="ghost" onClick={()=>onNavigate(user?"admin":"login")} size="sm">{user?"Dashboard":"Log in"}</Btn>
           <Btn v="primary" onClick={()=>onNavigate(user?"admin":"login")} size="sm">Get started free</Btn>
           {/* Hamburger */}
@@ -239,7 +240,7 @@ function Navbar({onNavigate,user,currentView}){
       {menu&&(
         <div style={{position:"fixed",top:68,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",zIndex:99}} onClick={()=>setMenu(false)}>
           <div style={{background:"#fff",padding:"1.5rem",boxShadow:shadow.xl}} onClick={e=>e.stopPropagation()}>
-            {[...links,{label:"Log in",view:user?"admin":"login"},{label:"Get started free",view:user?"admin":"login"}].map(l=>(
+            {[...links,{label:"✂️ Barber login",view:"barber-login"},{label:"Log in",view:user?"admin":"login"},{label:"Get started free",view:user?"admin":"login"}].map(l=>(
               <button key={l.label} onClick={()=>{onNavigate(l.view,l.hash);setMenu(false);}}
                 style={{display:"block",width:"100%",textAlign:"left",padding:"14px 0",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:16,fontWeight:500,color:C.navy,fontFamily:"inherit"}}>
                 {l.label}
@@ -258,16 +259,16 @@ function HeroPage({onNavigate,user}){
     <div style={S.app}>
       <Navbar onNavigate={onNavigate} user={user} currentView="home"/>
 
-      {/* HERO — premium dark gradient, no overlay issues */}
+      {/* HERO — clean white premium SaaS */}
       <section style={{
-        background:"linear-gradient(160deg,#060d1f 0%,#0d1b4b 45%,#1a1060 100%)",
-        padding:"5rem 0 0",
+        background:`radial-gradient(ellipse 80% 50% at 50% -5%, rgba(67,97,238,0.08) 0%, transparent 65%), #ffffff`,
+        padding:"5rem 0 4rem",
         overflow:"hidden",
         position:"relative",
       }}>
-        {/* Subtle glow orbs — purely decorative, no content overlap */}
-        <div style={{position:"absolute",top:"10%",left:"5%",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,rgba(67,97,238,0.18) 0%,transparent 70%)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",top:"5%",right:"5%",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(124,58,237,0.14) 0%,transparent 70%)",pointerEvents:"none"}}/>
+        {/* Very subtle decorative orbs */}
+        <div style={{position:"absolute",top:"0%",left:"-5%",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,rgba(67,97,238,0.05) 0%,transparent 70%)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",top:"0%",right:"-5%",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(124,58,237,0.05) 0%,transparent 70%)",pointerEvents:"none"}}/>
 
         <div style={{...S.container,position:"relative",zIndex:1}}>
           {/* Logo centred at top */}
@@ -277,52 +278,42 @@ function HeroPage({onNavigate,user}){
 
           {/* Pill badge */}
           <div style={{display:"flex",justifyContent:"center",marginBottom:"1.75rem"}}>
-            <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 18px",borderRadius:99,background:"rgba(67,97,238,0.2)",border:"1px solid rgba(67,97,238,0.4)",color:"#a5b4fc",fontSize:13,fontWeight:600,letterSpacing:0.3}}>
-              <span style={{width:7,height:7,borderRadius:"50%",background:"#818cf8",boxShadow:"0 0 6px #818cf8",display:"inline-block"}}/>
-              Built for modern walk-in businesses
-            </div>
+            <div style={{...S.chip}}>✨ Built for modern walk-in businesses</div>
           </div>
 
           {/* Headline */}
           <div style={{textAlign:"center",maxWidth:820,margin:"0 auto",paddingBottom:"3rem"}}>
-            <h1 style={{fontSize:"clamp(38px,6.5vw,76px)",fontWeight:900,lineHeight:1.05,letterSpacing:"-2.5px",color:"#fff",margin:"0 0 1.5rem",textShadow:"0 2px 40px rgba(0,0,0,0.3)"}}>
+            <h1 style={{fontSize:"clamp(38px,6.5vw,76px)",fontWeight:900,lineHeight:1.05,letterSpacing:"-2.5px",color:C.navy,margin:"0 0 1.5rem"}}>
               The modern queue system<br/>
-              <span style={{background:"linear-gradient(135deg,#818cf8 0%,#a78bfa 50%,#60a5fa 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
+              <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
                 for walk-in businesses
               </span>
             </h1>
-            <p style={{fontSize:"clamp(16px,2.2vw,20px)",color:"rgba(255,255,255,0.65)",lineHeight:1.75,margin:"0 0 2.5rem",maxWidth:580,marginLeft:"auto",marginRight:"auto"}}>
+            <p style={{fontSize:"clamp(16px,2.2vw,20px)",color:C.textMid,lineHeight:1.75,margin:"0 0 2.5rem",maxWidth:580,marginLeft:"auto",marginRight:"auto"}}>
               Customers join the queue from their phone, track their wait live, and businesses manage everything from one dashboard.
             </p>
             <div style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
               <Btn v="grad" size="lg" onClick={()=>onNavigate(user?"admin":"login")}>Start 7-day free trial →</Btn>
-              <button onClick={()=>onNavigate("how-it-works")}
-                style={{padding:"15px 32px",borderRadius:12,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.85)",fontSize:17,fontWeight:600,cursor:"pointer",backdropFilter:"blur(8px)",transition:"all 0.18s",fontFamily:"inherit"}}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.13)";e.currentTarget.style.borderColor="rgba(255,255,255,0.35)";}}
-                onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.07)";e.currentTarget.style.borderColor="rgba(255,255,255,0.2)";}}>
-                See how it works
-              </button>
+              <Btn v="outline" size="lg" onClick={()=>onNavigate("how-it-works")}>See how it works</Btn>
             </div>
-            <p style={{color:"rgba(255,255,255,0.35)",fontSize:13,margin:0}}>No credit card required · Cancel anytime</p>
+            <p style={{...S.muted,textAlign:"center",margin:0}}>No credit card required · Cancel anytime</p>
           </div>
 
-          {/* MOCKUPS — flush to bottom of hero, no gap */}
-          <div style={{display:"flex",gap:28,justifyContent:"center",alignItems:"flex-end",flexWrap:"wrap",padding:"0 1rem",position:"relative"}}>
-            {/* Fade at bottom so mockups dissolve into next section cleanly */}
-            <div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:"linear-gradient(to bottom,transparent,rgba(6,13,31,0.6))",pointerEvents:"none",zIndex:2}}/>
+          {/* MOCKUPS */}
+          <div style={{display:"flex",gap:28,justifyContent:"center",alignItems:"flex-start",flexWrap:"wrap",padding:"0 1rem"}}>
             <PhoneMockup/>
             <DashMockup/>
           </div>
         </div>
       </section>
 
-      {/* TRUST BAR — dark continuation then fades to light */}
-      <section style={{background:"linear-gradient(to bottom,#060d1f 0%,#f7f9fc 100%)",padding:"3rem 0 2.5rem",borderBottom:`1px solid ${C.border}`}}>
+      {/* TRUST BAR */}
+      <section style={{borderTop:`1px solid ${C.border}`,borderBottom:`1px solid ${C.border}`,padding:"2rem 0",background:C.bgAlt}}>
         <div style={S.container}>
-          <p style={{textAlign:"center",color:"rgba(255,255,255,0.4)",fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:2,marginBottom:"1.5rem"}}>Trusted by barbershops across the UK</p>
-          <div style={{display:"flex",gap:32,justifyContent:"center",alignItems:"center",flexWrap:"wrap"}}>
+          <p style={{textAlign:"center",...S.muted,marginBottom:"1.5rem",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Trusted by barbershops across the UK</p>
+          <div style={{display:"flex",gap:32,justifyContent:"center",alignItems:"center",flexWrap:"wrap",opacity:0.6}}>
             {["The Fade Lab","Sharp & Co.","Urban Cuts","Prestige Barbershop","Classic Cuts","The Groom Room"].map(n=>(
-              <div key={n} style={{fontSize:15,fontWeight:700,color:"rgba(255,255,255,0.55)",letterSpacing:"-0.3px"}}>{n}</div>
+              <div key={n} style={{fontSize:15,fontWeight:700,color:C.navy,letterSpacing:"-0.3px"}}>{n}</div>
             ))}
           </div>
         </div>
