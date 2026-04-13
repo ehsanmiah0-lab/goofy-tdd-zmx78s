@@ -323,26 +323,116 @@ function HeroPage({onNavigate,user}){
       </section>
 
       {/* FEATURES */}
-      <section id="features" style={S.section}>
+      <section id="features" style={{...S.section,paddingBottom:"2rem"}}>
         <div style={S.container}>
+          {/* Header */}
           <div style={{textAlign:"center",marginBottom:"4rem"}}>
-            <div style={S.chip}>Features</div>
-            <h2 style={{fontSize:"clamp(28px,4vw,44px)",fontWeight:900,letterSpacing:"-1px",color:C.navy,margin:"1rem 0 1rem"}}>Everything you need to run a smooth queue</h2>
-            <p style={{...T_body,maxWidth:560,margin:"0 auto"}}>No complex setup. No hardware. Just a link your customers scan to join.</p>
+            <div style={S.chip}>Built for barbers</div>
+            <h2 style={{fontSize:"clamp(28px,4vw,48px)",fontWeight:900,letterSpacing:"-1.5px",color:C.navy,margin:"1rem 0 1rem",lineHeight:1.1}}>
+              More customers served.<br/>
+              <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Less stress. More money.</span>
+            </h2>
+            <p style={{fontSize:18,color:C.textMid,maxWidth:540,margin:"0 auto",lineHeight:1.7}}>
+              ZentriqFlow solves the real problems every barbershop owner faces — crowded waiting areas, lost walk-ins, and idle chairs.
+            </p>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:20}}>
+
+          {/* Feature grid */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:"4rem"}}>
             {[
-              {icon:"📱",title:"QR Code Joining",desc:"Customers scan a QR code with their phone camera. No app download, no account needed. Join in under 30 seconds.",color:"#4361ee"},
-              {icon:"📍",title:"Live Queue Position",desc:"Real-time position updates. Customers see exactly where they are in the queue and get notified when they're next.",color:"#7c3aed"},
-              {icon:"⏱️",title:"Estimated Wait Times",desc:"Automatic wait time estimates based on average service duration. Customers plan their visit around it.",color:"#10b981"},
-              {icon:"🖥️",title:"Admin Dashboard",desc:"Full control of your queue. Call customers, assign barbers, track earnings, and manage services from one screen.",color:"#f59e0b"},
-              {icon:"✂️",title:"Multi-Barber Support",desc:"Each barber gets their own queue and PIN login. Customers can choose their preferred barber when joining.",color:"#ef4444"},
-              {icon:"📧",title:"Email Notifications",desc:"Customers get a confirmation email when they join and a 'you're next' alert when it's almost their turn.",color:"#06b6d4"},
-              {icon:"⚡",title:"5-Minute Setup",desc:"Create your shop, add barbers and services, display the QR code. You'll be ready for customers in minutes.",color:"#8b5cf6"},
-              {icon:"📊",title:"Daily Earnings Tracker",desc:"See each barber's earnings at a glance. Automatic calculation based on completed services.",color:"#f97316"},
-            ].map(f=>(
-              <FeatureCard key={f.title} {...f}/>
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h1v1H9zM14 9h1v1h-1zM9 14h1v1H9zM14 14h1v1h-1z"/><path d="M7 3v2M17 3v2M3 7h18"/></svg>,
+                label:"More walk-ins",
+                title:"Customers join from outside",
+                desc:"They scan your QR code, join the queue from their phone, and come back when it's their turn — no crowding, no app needed.",
+                color:"#4361ee",
+                stat:"↑ 40% more walk-ins retained",
+              },
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+                label:"Fewer walkouts",
+                title:"Show wait times upfront",
+                desc:"Customers see their exact position and estimated wait before they even walk in. They stay because they know exactly when they'll be seen.",
+                color:"#7c3aed",
+                stat:"↓ 60% fewer walkouts",
+              },
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.05 3.4 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"/></svg>,
+                label:"Zero interruptions",
+                title:"Stop answering "how long?"",
+                desc:"Customers track their own position live. Email alerts fire automatically when they're next — your team stays focused on cutting.",
+                color:"#10b981",
+                stat:"Save 2+ hrs of interruptions/day",
+              },
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+                label:"Full control",
+                title:"Run your whole shop from one screen",
+                desc:"Call customers, see who's next, manage services and prices — all from the admin dashboard. Open it on your phone, tablet, or any device.",
+                color:"#f59e0b",
+                stat:"Everything in one place",
+              },
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+                label:"Keep all chairs busy",
+                title:"Every barber gets their own queue",
+                desc:"Each barber logs in with their PIN and sees only their customers. No more sharing chairs awkwardly — every barber earns their own revenue.",
+                color:"#ef4444",
+                stat:"Maximise every barber's time",
+              },
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+                label:"Track earnings daily",
+                title:"See exactly what each barber made today",
+                desc:"Earnings are tracked automatically with every completed cut. Review daily totals per barber and know exactly how your shop is performing.",
+                color:"#06b6d4",
+                stat:"Auto-resets at 4am daily",
+              },
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+                label:"Ready in minutes",
+                title:"Set up before your first customer today",
+                desc:"Create your shop, add your barbers, print the QR code. You can be live in 5 minutes — no training, no tech skills needed.",
+                color:"#8b5cf6",
+                stat:"5-minute setup, zero hardware",
+              },
+              {
+                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>,
+                label:"No lost customers",
+                title:"Bring customers back at the right time",
+                desc:"Customers get a 'you're almost up' email alert so they arrive on time. No more empty chairs from people who wandered off and missed their turn.",
+                color:"#f97316",
+                stat:"Fewer no-shows, fuller days",
+              },
+            ].map((f,i)=>(
+              <FeatureCardV2 key={i} {...f}/>
             ))}
+          </div>
+
+          {/* Why barbers love this strip */}
+          <div style={{background:"linear-gradient(135deg,#0d1b4b 0%,#1e3a8a 100%)",borderRadius:24,padding:"3rem 2.5rem",marginBottom:"2rem"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:32,alignItems:"center"}}>
+              <div>
+                <div style={{...S.chip,background:"rgba(255,255,255,0.12)",color:"#a5b4fc",border:"1px solid rgba(255,255,255,0.15)",marginBottom:"1rem"}}>Why barbers love ZentriqFlow</div>
+                <h3 style={{fontSize:"clamp(20px,3vw,30px)",fontWeight:900,color:"#fff",margin:"0 0 0.75rem",letterSpacing:"-0.5px",lineHeight:1.2}}>Built by people who understand barbershops</h3>
+                <p style={{color:"rgba(255,255,255,0.6)",fontSize:15,lineHeight:1.7,margin:"0 0 1.5rem"}}>We designed ZentriqFlow specifically for walk-in businesses — so every feature solves a real problem you face every day.</p>
+                <Btn v="white" size="md" onClick={()=>onNavigate("login")}>Start your free trial →</Btn>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {[
+                  {icon:"💰",text:"Barbers report earning more per day because idle time drops significantly"},
+                  {icon:"😌",text:"No more customers crowding the doorway or asking "how long will it be?""},
+                  {icon:"📱",text:"Customers love waiting from home — it feels modern and professional"},
+                  {icon:"⚡",text:"Takes 5 minutes to set up — most shops are live the same day"},
+                  {icon:"🔒",text:"Each barber has their own secure PIN login — no shared accounts"},
+                ].map((item,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:14,padding:"14px 16px",background:"rgba(255,255,255,0.06)",borderRadius:14,border:"1px solid rgba(255,255,255,0.08)"}}>
+                    <span style={{fontSize:20,flexShrink:0,marginTop:1}}>{item.icon}</span>
+                    <span style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6}}>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -439,6 +529,49 @@ function FeatureCard({icon,title,desc,color}){
       <div style={{width:48,height:48,borderRadius:14,background:color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,marginBottom:16}}>{icon}</div>
       <h3 style={{fontSize:17,fontWeight:700,color:C.navy,margin:"0 0 8px"}}>{title}</h3>
       <p style={{...S.muted,lineHeight:1.6}}>{desc}</p>
+    </div>
+  );
+}
+
+function FeatureCardV2({icon,title,desc,color,label,stat}){
+  const [h,setH]=useState(false);
+  return (
+    <div
+      style={{
+        background:"#fff",
+        borderRadius:18,
+        border:`1px solid ${h?color+"40":C.border}`,
+        padding:"1.5rem",
+        boxShadow:h?`0 8px 32px ${color}18,${shadow.md}`:shadow.sm,
+        transform:h?"translateY(-3px)":"none",
+        transition:"all 0.2s",
+        cursor:"default",
+        boxSizing:"border-box",
+        display:"flex",
+        flexDirection:"column",
+        gap:10,
+      }}
+      onMouseEnter={()=>setH(true)}
+      onMouseLeave={()=>setH(false)}
+    >
+      {/* Top row: icon + label */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+        <div style={{width:40,height:40,borderRadius:12,background:color+"15",display:"flex",alignItems:"center",justifyContent:"center",color,flexShrink:0}}>
+          {icon}
+        </div>
+        <span style={{fontSize:11,fontWeight:700,color,background:color+"12",border:`1px solid ${color}25`,borderRadius:99,padding:"3px 10px",whiteSpace:"nowrap",letterSpacing:0.2}}>
+          {label}
+        </span>
+      </div>
+      {/* Title */}
+      <h3 style={{fontSize:16,fontWeight:800,color:C.navy,margin:0,lineHeight:1.3,letterSpacing:"-0.2px"}}>{title}</h3>
+      {/* Desc */}
+      <p style={{fontSize:13,color:C.textMid,lineHeight:1.65,margin:0}}>{desc}</p>
+      {/* Stat */}
+      <div style={{marginTop:4,paddingTop:10,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:6}}>
+        <span style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0,display:"inline-block"}}/>
+        <span style={{fontSize:12,fontWeight:700,color,letterSpacing:0.1}}>{stat}</span>
+      </div>
     </div>
   );
 }
