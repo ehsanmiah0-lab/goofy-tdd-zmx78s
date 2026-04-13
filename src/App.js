@@ -382,6 +382,81 @@ function HeroPage({onNavigate,user}){
         </div>
       </section>
 
+      {/* PROFESSIONALISM SECTION */}
+      <section style={{padding:"6rem 0",background:"#fff",borderTop:`1px solid ${C.border}`}}>
+        <div style={S.container}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:64,alignItems:"center"}}>
+
+            {/* Left — headline + copy */}
+            <div>
+              <div style={S.chip}>Your reputation</div>
+              <h2 style={{fontSize:"clamp(26px,4vw,44px)",fontWeight:900,letterSpacing:"-1.5px",color:C.navy,margin:"1rem 0 1.25rem",lineHeight:1.1}}>
+                Make your shop look like<br/>
+                <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>it means business.</span>
+              </h2>
+              <p style={{fontSize:17,color:C.textMid,lineHeight:1.8,marginBottom:"1.5rem"}}>
+                First impressions matter. When a customer scans your QR code and sees a slick, real-time queue system — they don't just see a barbershop. They see a professional business that values their time.
+              </p>
+              <p style={{fontSize:17,color:C.textMid,lineHeight:1.8,marginBottom:"2rem"}}>
+                Most barbershops still rely on shouting names across the room or telling customers to "just wait outside." ZentriqFlow puts you in a different league instantly.
+              </p>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {[
+                  {icon:"🏆",title:"Stand out on the high street",desc:"A QR code in your window signals to every passerby that your shop is modern, organised, and worth choosing."},
+                  {icon:"⭐",title:"Build a reputation with reviews",desc:"Every customer can rate their visit. Strong ratings on the Find a Barber page bring new customers to you — without you lifting a finger."},
+                  {icon:"📱",title:"Customers brag about it",desc:"When people can wait from home and track their place on their phone, they tell their mates. Word of mouth grows automatically."},
+                ].map(item=>(
+                  <div key={item.title} style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+                    <div style={{width:40,height:40,borderRadius:12,background:C.indigoLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{item.icon}</div>
+                    <div>
+                      <div style={{fontWeight:700,color:C.navy,fontSize:15,marginBottom:3}}>{item.title}</div>
+                      <div style={{fontSize:14,color:C.textMid,lineHeight:1.6}}>{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — comparison card */}
+            <div style={{display:"flex",flexDirection:"column",gap:20}}>
+              {/* Without ZentriqFlow */}
+              <div style={{...S.card,border:"1px solid #fecaca",background:"#fff5f5",padding:"1.75rem"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1.25rem"}}>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:"#fecaca",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>✕</div>
+                  <span style={{fontWeight:800,fontSize:16,color:"#991b1b"}}>Without ZentriqFlow</span>
+                </div>
+                {["Customers wait outside in all weathers","No way to track how long the wait actually is","Barbers shout names across a busy shop","No reviews — new customers can't trust you","Looks the same as every other basic barbershop","Lost customers who couldn't be bothered to wait"].map((t,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:10}}>
+                    <span style={{color:"#ef4444",fontSize:16,flexShrink:0,marginTop:1}}>✕</span>
+                    <span style={{fontSize:14,color:"#7f1d1d",lineHeight:1.5}}>{t}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* With ZentriqFlow */}
+              <div style={{...S.card,border:`2px solid ${C.indigo}30`,background:"linear-gradient(135deg,#eef2ff 0%,#f5f3ff 100%)",padding:"1.75rem",boxShadow:`0 8px 32px rgba(67,97,238,0.12)`}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1.25rem"}}>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:C.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>✓</div>
+                  <span style={{fontWeight:800,fontSize:16,color:C.navy}}>With ZentriqFlow</span>
+                  <span style={{...S.chip,marginLeft:"auto",fontSize:11}}>You</span>
+                </div>
+                {["Customers wait comfortably from home or a café","Live position and wait time visible on their phone","Professional app-like experience — no shouting","Verified reviews build trust with new customers","Discoverable on Find a Barber — new footfall automatically","Your shop looks modern, serious, and worth choosing"].map((t,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:10}}>
+                    <span style={{color:"#10b981",fontSize:16,flexShrink:0,marginTop:1}}>✓</span>
+                    <span style={{fontSize:14,color:C.navy,fontWeight:500,lineHeight:1.5}}>{t}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Btn v="grad" full size="lg" onClick={()=>onNavigate(user?"admin":"login")}>
+                Get early access →
+              </Btn>
+              <p style={{...S.muted,textAlign:"center",fontSize:12}}>No credit card needed · Setup done with you</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* HOW IT WORKS TEASER */}
       <section style={{...S.section,background:C.bgAlt,padding:"5rem 0"}}>
         <div style={S.container}>
