@@ -340,70 +340,14 @@ function HeroPage({onNavigate,user}){
           {/* Feature grid */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:"4rem"}}>
             {[
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h1v1H9zM14 9h1v1h-1zM9 14h1v1H9zM14 14h1v1h-1z"/><path d="M7 3v2M17 3v2M3 7h18"/></svg>,
-                label:"More walk-ins",
-                title:"Customers join from outside",
-                desc:"They scan your QR code, join the queue from their phone, and come back when it's their turn — no crowding, no app needed.",
-                color:"#4361ee",
-                stat:"↑ 40% more walk-ins retained",
-              },
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-                label:"Fewer walkouts",
-                title:"Show wait times upfront",
-                desc:"Customers see their exact position and estimated wait before they even walk in. They stay because they know exactly when they'll be seen.",
-                color:"#7c3aed",
-                stat:"↓ 60% fewer walkouts",
-              },
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.05 3.4 2 2 0 0 1 3 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z"/></svg>,
-                label:"Zero interruptions",
-                title:"Stop answering 'how long?'",
-                desc:"Customers track their own position live. Email alerts fire automatically when they're next — your team stays focused on cutting.",
-                color:"#10b981",
-                stat:"Save 2+ hrs of interruptions/day",
-              },
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
-                label:"Full control",
-                title:"Run your whole shop from one screen",
-                desc:"Call customers, see who's next, manage services and prices — all from the admin dashboard. Open it on your phone, tablet, or any device.",
-                color:"#f59e0b",
-                stat:"Everything in one place",
-              },
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-                label:"Keep all chairs busy",
-                title:"Every barber gets their own queue",
-                desc:"Each barber logs in with their PIN and sees only their customers. No more sharing chairs awkwardly — every barber earns their own revenue.",
-                color:"#ef4444",
-                stat:"Maximise every barber's time",
-              },
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-                label:"Track earnings daily",
-                title:"See exactly what each barber made today",
-                desc:"Earnings are tracked automatically with every completed cut. Review daily totals per barber and know exactly how your shop is performing.",
-                color:"#06b6d4",
-                stat:"Auto-resets at 4am daily",
-              },
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
-                label:"Ready in minutes",
-                title:"Set up before your first customer today",
-                desc:"Create your shop, add your barbers, print the QR code. You can be live in 5 minutes — no training, no tech skills needed.",
-                color:"#8b5cf6",
-                stat:"5-minute setup, zero hardware",
-              },
-              {
-                icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>,
-                label:"No lost customers",
-                title:"Bring customers back at the right time",
-                desc:"Customers get a 'you're almost up' email alert so they arrive on time. No more empty chairs from people who wandered off and missed their turn.",
-                color:"#f97316",
-                stat:"Fewer no-shows, fuller days",
-              },
+              {icon:"📱",label:"More walk-ins",title:"Customers join from outside",desc:"They scan your QR code, join the queue from their phone, and come back when it's their turn — no crowding, no app needed.",color:"#4361ee",stat:"↑ 40% more walk-ins retained"},
+              {icon:"⏱️",label:"Fewer walkouts",title:"Show wait times upfront",desc:"Customers see their exact position and estimated wait before they even walk in. They stay because they know exactly when they'll be seen.",color:"#7c3aed",stat:"↓ 60% fewer walkouts"},
+              {icon:"🔕",label:"Zero interruptions",title:"Stop answering 'how long?'",desc:"Customers track their own position live. Email alerts fire automatically when they're next — your team stays focused on cutting.",color:"#10b981",stat:"Save 2+ hrs of interruptions/day"},
+              {icon:"🖥️",label:"Full control",title:"Run your whole shop from one screen",desc:"Call customers, see who's next, manage services and prices — all from the admin dashboard. Works on your phone, tablet, or any device.",color:"#f59e0b",stat:"Everything in one place"},
+              {icon:"✂️",label:"Keep all chairs busy",title:"Every barber gets their own queue",desc:"Each barber logs in with their PIN and sees only their customers. No more confusion — every barber earns their own revenue.",color:"#ef4444",stat:"Maximise every barber's time"},
+              {icon:"📊",label:"Track earnings daily",title:"See exactly what each barber made today",desc:"Earnings are tracked automatically with every completed cut. Review daily totals per barber and know exactly how your shop is performing.",color:"#06b6d4",stat:"Auto-resets at 4am daily"},
+              {icon:"⚡",label:"Ready in minutes",title:"Set up before your first customer today",desc:"Create your shop, add your barbers, print the QR code. You can be live in 5 minutes — no training, no tech skills needed.",color:"#8b5cf6",stat:"5-minute setup, zero hardware"},
+              {icon:"🔔",label:"No lost customers",title:"Bring customers back at the right time",desc:"Customers get a 'you're almost up' email alert so they arrive on time. No more empty chairs from people who wandered off.",color:"#f97316",stat:"Fewer no-shows, fuller days"},
             ].map((f,i)=>(
               <FeatureCardV2 key={i} {...f}/>
             ))}
@@ -421,7 +365,7 @@ function HeroPage({onNavigate,user}){
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
                 {[
                   {icon:"💰",text:"Barbers report earning more per day because idle time drops significantly"},
-                  {icon:"😌",text:"No more customers crowding the doorway or asking "how long will it be?""},
+                  {icon:"😌",text:"No more customers crowding the doorway or asking 'how long will it be?'"},
                   {icon:"📱",text:"Customers love waiting from home — it feels modern and professional"},
                   {icon:"⚡",text:"Takes 5 minutes to set up — most shops are live the same day"},
                   {icon:"🔒",text:"Each barber has their own secure PIN login — no shared accounts"},
