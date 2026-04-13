@@ -235,7 +235,7 @@ function Navbar({onNavigate,user,currentView}){
           {/* Desktop only buttons */}
           {wide&&<Btn v="ghost" onClick={()=>onNavigate("barber-login")} size="sm">✂️ Barber login</Btn>}
           {wide&&<Btn v="ghost" onClick={()=>onNavigate(user?"admin":"login")} size="sm">{user?"Dashboard":"Log in"}</Btn>}
-          {wide&&<Btn v="primary" onClick={()=>onNavigate(user?"admin":"login")} size="sm">Get started free</Btn>}
+          {wide&&<Btn v="primary" onClick={()=>onNavigate(user?"admin":"login")} size="sm">Get early access</Btn>}
           {/* Hamburger — always visible */}
           <button onClick={()=>setMenu(!menu)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:10,cursor:"pointer",padding:"8px 10px",display:"flex",flexDirection:"column",gap:4}}>
             <span style={{display:"block",width:18,height:2,background:C.navy,borderRadius:2,transition:"all 0.2s",transform:menu?"rotate(45deg) translate(3px,6px)":"none"}} />
@@ -248,7 +248,7 @@ function Navbar({onNavigate,user,currentView}){
       {menu&&(
         <div style={{position:"fixed",top:68,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",zIndex:99}} onClick={()=>setMenu(false)}>
           <div style={{background:"#fff",padding:"1rem 1.5rem 1.5rem",boxShadow:shadow.xl}} onClick={e=>e.stopPropagation()}>
-            {[...links,{label:"✂️ Barber login",view:"barber-login"},{label:"Log in",view:user?"admin":"login"},{label:"Get started free →",view:user?"admin":"login"}].map(l=>(
+            {[...links,{label:"✂️ Barber login",view:"barber-login"},{label:"Log in",view:user?"admin":"login"},{label:"Get early access →",view:user?"admin":"login"}].map(l=>(
               <button key={l.label} onClick={()=>{onNavigate(l.view,l.hash);setMenu(false);}}
                 style={{display:"block",width:"100%",textAlign:"left",padding:"14px 0",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:16,fontWeight:l.label.includes("free")?700:500,color:l.label.includes("free")?C.indigo:C.navy,fontFamily:"inherit"}}>
                 {l.label}
@@ -296,7 +296,7 @@ function HeroPage({onNavigate,user}){
               Customers join the queue from their phone, track their wait live, and businesses manage everything from one dashboard.
             </p>
             <div style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap",alignItems:"center",marginBottom:14}}>
-              <Btn v="grad" size="lg" onClick={()=>onNavigate(user?"admin":"login")}>Start 7-day free trial →</Btn>
+              <Btn v="grad" size="lg" onClick={()=>onNavigate(user?"admin":"login")}>Get early access →</Btn>
               <Btn v="outline" size="lg" onClick={()=>onNavigate("how-it-works")}>See how it works</Btn>
             </div>
             <p style={{...S.muted,textAlign:"center",margin:0}}>No credit card required · Cancel anytime</p>
@@ -360,7 +360,7 @@ function HeroPage({onNavigate,user}){
                 <div style={{...S.chip,background:"rgba(255,255,255,0.12)",color:"#a5b4fc",border:"1px solid rgba(255,255,255,0.15)",marginBottom:"1rem"}}>Why barbers love ZentriqFlow</div>
                 <h3 style={{fontSize:"clamp(20px,3vw,30px)",fontWeight:900,color:"#fff",margin:"0 0 0.75rem",letterSpacing:"-0.5px",lineHeight:1.2}}>Built by people who understand barbershops</h3>
                 <p style={{color:"rgba(255,255,255,0.6)",fontSize:15,lineHeight:1.7,margin:"0 0 1.5rem"}}>We designed ZentriqFlow specifically for walk-in businesses — so every feature solves a real problem you face every day.</p>
-                <Btn v="white" size="md" onClick={()=>onNavigate("login")}>Start your free trial →</Btn>
+                <Btn v="white" size="md" onClick={()=>onNavigate("login")}>Request early access →</Btn>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
                 {[
@@ -430,20 +430,36 @@ function HeroPage({onNavigate,user}){
       {/* PRICING */}
       <section id="pricing" style={{...S.section,background:C.bgAlt}}>
         <div style={S.container}>
+          {/* Exclusivity banner */}
+          <div style={{display:"flex",justifyContent:"center",marginBottom:"2rem"}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:10,padding:"10px 20px",borderRadius:99,background:"linear-gradient(135deg,#0d1b4b,#1e3a8a)",color:"#fff",fontSize:13,fontWeight:600,boxShadow:"0 4px 20px rgba(13,27,75,0.25)"}}>
+              <span style={{width:8,height:8,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 8px #34d399",display:"inline-block",flexShrink:0}}/>
+              Currently onboarding a limited number of barbershops
+            </div>
+          </div>
           <div style={{textAlign:"center",marginBottom:"3.5rem"}}>
-            <div style={S.chip}>Pricing</div>
-            <h2 style={{fontSize:"clamp(28px,4vw,44px)",fontWeight:900,letterSpacing:"-1px",color:C.navy,margin:"1rem 0 1rem"}}>Simple, transparent pricing</h2>
-            <p style={{...T_body,maxWidth:480,margin:"0 auto"}}>Start free. Upgrade when you're ready. No hidden fees.</p>
+            <div style={S.chip}>Early access</div>
+            <h2 style={{fontSize:"clamp(28px,4vw,48px)",fontWeight:900,letterSpacing:"-1.5px",color:C.navy,margin:"1rem 0 1rem",lineHeight:1.1}}>
+              Serious tools for<br/>serious barbershops.
+            </h2>
+            <p style={{fontSize:18,color:C.textMid,maxWidth:500,margin:"0 auto",lineHeight:1.7}}>
+              We work closely with each shop during setup. Right now, access is limited — we're onboarding selected barbershops who want to grow.
+            </p>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,maxWidth:960,margin:"0 auto"}}>
             {[
-              {name:"Pro",price:"£29",period:"/month",desc:"For growing barbershops",features:["1 shop","Unlimited barbers","Unlimited queue entries","Custom QR code branding","Email + SMS notifications","Advanced analytics","Priority support"],popular:true,cta:"Start 7-day free trial",ctaV:"grad"},
-              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses",features:["Multiple shops","Unlimited barbers","Everything in Pro","Multi-location dashboard","Custom domain","Dedicated support","API access"],popular:false,cta:"Contact us",ctaV:"outline"},
+              {name:"Pro",price:"£29",period:"/month",desc:"For barbershops ready to run a tighter, more profitable operation.",features:["1 shop","Unlimited barbers","Unlimited queue entries","Custom QR code branding","Email + SMS notifications","Advanced analytics","Priority support"],popular:true,cta:"Get early access",ctaV:"grad"},
+              {name:"Business",price:"£59",period:"/month",desc:"For multi-chair setups and growing chains that need full control.",features:["Multiple shops","Unlimited barbers","Everything in Pro","Multi-location dashboard","Custom domain","Dedicated support","API access"],popular:false,cta:"Talk to us",ctaV:"outline"},
             ].map(p=>(
               <PricingCard key={p.name} {...p} onNavigate={onNavigate}/>
             ))}
           </div>
-          <p style={{...S.muted,textAlign:"center",marginTop:"1.5rem"}}>All plans include a 7-day free trial. No credit card required.</p>
+          <div style={{maxWidth:560,margin:"2rem auto 0",textAlign:"center"}}>
+            <p style={{fontSize:14,color:C.textMid,lineHeight:1.7,margin:"0 0 6px"}}>
+              <strong style={{color:C.navy}}>No credit card needed to get started.</strong> We'll onboard your shop personally and make sure everything is set up correctly before you go live.
+            </p>
+            <p style={{...S.muted}}>Early access shops lock in their rate — pricing won't increase for you.</p>
+          </div>
         </div>
       </section>
 
@@ -452,10 +468,27 @@ function HeroPage({onNavigate,user}){
         <div style={{position:"absolute",top:-100,right:-100,width:400,height:400,borderRadius:"50%",background:"rgba(67,97,238,0.15)"}}/>
         <div style={{position:"absolute",bottom:-80,left:-80,width:300,height:300,borderRadius:"50%",background:"rgba(124,58,237,0.12)"}}/>
         <div style={{...S.container,textAlign:"center",position:"relative"}}>
-          <h2 style={{fontSize:"clamp(28px,5vw,52px)",fontWeight:900,color:"#fff",letterSpacing:"-1.5px",margin:"0 0 1.25rem"}}>Ready to transform your shop?</h2>
-          <p style={{fontSize:18,color:"rgba(255,255,255,0.7)",margin:"0 0 2.5rem",maxWidth:480,marginLeft:"auto",marginRight:"auto"}}>Join hundreds of barbershops already using ZentriqFlow to run smarter queues.</p>
-          <Btn v="white" size="lg" onClick={()=>onNavigate(user?"admin":"login")}>Set up your shop free →</Btn>
-          <p style={{color:"rgba(255,255,255,0.4)",fontSize:13,marginTop:12}}>No credit card required · Takes 5 minutes</p>
+          {/* Live spots indicator */}
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"6px 16px",borderRadius:99,background:"rgba(52,211,153,0.12)",border:"1px solid rgba(52,211,153,0.25)",marginBottom:"2rem"}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"#34d399",boxShadow:"0 0 6px #34d399",display:"inline-block"}}/>
+            <span style={{color:"#6ee7b7",fontSize:13,fontWeight:600}}>Early access spots available now</span>
+          </div>
+          <h2 style={{fontSize:"clamp(28px,5vw,56px)",fontWeight:900,color:"#fff",letterSpacing:"-2px",margin:"0 0 1.25rem",lineHeight:1.05}}>
+            Your shop deserves<br/>a smarter queue.
+          </h2>
+          <p style={{fontSize:18,color:"rgba(255,255,255,0.65)",margin:"0 0 2.5rem",maxWidth:480,marginLeft:"auto",marginRight:"auto",lineHeight:1.7}}>
+            We're onboarding barbershops personally. You get a direct line to us, a fully set up system, and a shop that looks like it means business.
+          </p>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+            <Btn v="white" size="lg" onClick={()=>onNavigate(user?"admin":"login")}>Get early access →</Btn>
+            <div style={{display:"flex",alignItems:"center",gap:20,flexWrap:"wrap",justifyContent:"center"}}>
+              {["No credit card needed","Setup done with you","Lock in early pricing"].map(t=>(
+                <div key={t} style={{display:"flex",alignItems:"center",gap:6,color:"rgba(255,255,255,0.45)",fontSize:13}}>
+                  <span style={{color:"#34d399",fontSize:14}}>✓</span> {t}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -660,7 +693,7 @@ function HowItWorksPage({onNavigate,user}){
             <div style={{fontSize:48,marginBottom:16}}>🎉</div>
             <h3 style={{color:"#fff",fontSize:26,fontWeight:800,margin:"0 0 0.75rem",letterSpacing:"-0.5px"}}>Result: Zero stress, happy customers</h3>
             <p style={{color:"rgba(255,255,255,0.8)",fontSize:16,margin:"0 0 2rem",maxWidth:480,marginLeft:"auto",marginRight:"auto"}}>Customers wait comfortably, barbers stay organised, and you get paid — automatically.</p>
-            <Btn v="white" size="lg" onClick={()=>onNavigate(user?"admin":"login")}>Get started free →</Btn>
+            <Btn v="white" size="lg" onClick={()=>onNavigate(user?"admin":"login")}>Get early access →</Btn>
           </div>
           {/* FAQ mini */}
           <div style={{marginTop:"4rem"}}>
@@ -908,22 +941,22 @@ function PricingPage({onNavigate,user}){
       <Navbar onNavigate={onNavigate} user={user} currentView="pricing"/>
       <section style={{background:`radial-gradient(ellipse 60% 40% at 50% 0%,rgba(67,97,238,0.1) 0%,transparent 60%)`,padding:"5rem 0 3rem"}}>
         <div style={{...S.container,textAlign:"center"}}>
-          <div style={S.chip}>Pricing</div>
-          <h1 style={{fontSize:"clamp(32px,6vw,52px)",fontWeight:900,letterSpacing:"-1.5px",color:C.navy,margin:"1rem 0 1rem"}}>Simple, transparent pricing</h1>
-          <p style={{...T_body,maxWidth:480,margin:"0 auto"}}>Start free. Upgrade when you're ready. No hidden fees, no surprises.</p>
+          <div style={S.chip}>Early access</div>
+          <h1 style={{fontSize:"clamp(32px,6vw,52px)",fontWeight:900,letterSpacing:"-1.5px",color:C.navy,margin:"1rem 0 1rem",lineHeight:1.1}}>Serious tools for<br/>serious barbershops.</h1>
+          <p style={{fontSize:18,color:C.textMid,maxWidth:500,margin:"0 auto",lineHeight:1.7}}>We're onboarding a limited number of barbershops. No hidden fees — and early access shops lock in their rate permanently.</p>
         </div>
       </section>
       <section style={{padding:"2rem 0 5rem"}}>
         <div style={{...S.container,maxWidth:1000}}>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,maxWidth:960,margin:"0 auto"}}>
             {[
-              {name:"Pro",price:"£29",period:"/month",desc:"For growing barbershops that want more power and customisation.",features:["1 shop location","Unlimited barbers","Unlimited queue entries","Custom QR code branding","Email + SMS notifications","Advanced analytics","Earnings reporting","Priority support","Remove ZentriqFlow branding"],popular:true,cta:"Start 7-day free trial",ctaV:"grad"},
+              {name:"Pro",price:"£29",period:"/month",desc:"For barbershops ready to run a tighter, more profitable operation.",features:["1 shop location","Unlimited barbers","Unlimited queue entries","Custom QR code branding","Email + SMS notifications","Advanced analytics","Earnings reporting","Priority support","Remove ZentriqFlow branding"],popular:true,cta:"Get early access",ctaV:"grad"},
               {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and chains.",features:["Multiple shop locations","Unlimited barbers","Everything in Pro","Multi-location dashboard","Centralised earnings view","Custom domain","Dedicated account manager","API access","White-label option"],popular:false,cta:"Contact us",ctaV:"outline"},
             ].map(p=><PricingCard key={p.name} {...p} onNavigate={onNavigate}/>)}
           </div>
           <div style={{...S.card,maxWidth:780,margin:"3rem auto 0",padding:"2rem",background:C.indigoLight,border:`1px solid ${C.indigo}25`,textAlign:"center"}}>
-            <h3 style={{fontSize:18,fontWeight:700,color:C.navy,margin:"0 0 0.75rem"}}>🚀 We're in launch mode — everything is free right now</h3>
-            <p style={{...S.muted,maxWidth:540,margin:"0 auto"}}>ZentriqFlow is currently 100% free with no limits while we grow our user base. Early adopters will receive generous discounts when paid plans launch. Get started today and lock in your rate.</p>
+            <h3 style={{fontSize:18,fontWeight:700,color:C.navy,margin:"0 0 0.75rem"}}>🔒 Early access shops lock in their rate — forever</h3>
+            <p style={{...S.muted,maxWidth:540,margin:"0 auto"}}>We're currently onboarding a small number of barbershops directly. Get in now, work with us personally to get set up, and your price never increases — no matter what happens to future pricing.</p>
           </div>
           {/* FAQ */}
           <div style={{maxWidth:680,margin:"3rem auto 0"}}>
@@ -931,7 +964,7 @@ function PricingPage({onNavigate,user}){
             {[
               {q:"When do paid plans start?",a:"We're currently in free launch mode. We'll give at least 30 days notice before introducing any paid plans, and early adopters will receive special pricing."},
               {q:"Can I cancel anytime?",a:"Yes. When paid plans launch, you can cancel at any time. Your access continues until the end of your billing period. No cancellation fees."},
-              {q:"Is there a free trial on paid plans?",a:"Yes. Both Pro and Business plans include a 7-day free trial with no credit card required."},
+              {q:"Is there a risk to getting started?",a:"None. No credit card is required to get access. We onboard you personally and make sure the system works for your shop before you go live."},
               {q:"Do you offer discounts for annual billing?",a:"Yes. Annual billing will receive approximately 2 months free compared to monthly billing."},
             ].map((faq,i)=><FaqItem key={i} {...faq}/>)}
           </div>
