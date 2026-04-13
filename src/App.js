@@ -211,6 +211,7 @@ function Navbar({onNavigate,user,currentView}){
   const links=[
     {label:"Features",view:"home",hash:"features"},
     {label:"How it works",view:"how-it-works"},
+    {label:"Find a Barber",view:"find-barber"},
     {label:"Pricing",view:"pricing"},
     {label:"Contact",view:"contact"},
   ];
@@ -248,7 +249,7 @@ function Navbar({onNavigate,user,currentView}){
       {menu&&(
         <div style={{position:"fixed",top:68,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",zIndex:99}} onClick={()=>setMenu(false)}>
           <div style={{background:"#fff",padding:"1rem 1.5rem 1.5rem",boxShadow:shadow.xl}} onClick={e=>e.stopPropagation()}>
-            {[...links,{label:"✂️ Barber login",view:"barber-login"},{label:"Log in",view:user?"admin":"login"},{label:"Get early access →",view:user?"admin":"login"}].map(l=>(
+            {[...links,{label:"💈 Find a Barber",view:"find-barber"},{label:"✂️ Barber login",view:"barber-login"},{label:"Log in",view:user?"admin":"login"},{label:"Get early access →",view:user?"admin":"login"}].map(l=>(
               <button key={l.label} onClick={()=>{onNavigate(l.view,l.hash);setMenu(false);}}
                 style={{display:"block",width:"100%",textAlign:"left",padding:"14px 0",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:16,fontWeight:l.label.includes("free")?700:500,color:l.label.includes("free")?C.indigo:C.navy,fontFamily:"inherit"}}>
                 {l.label}
@@ -617,7 +618,7 @@ function Footer({onNavigate}){
             </div>
           </div>
           {[
-            {title:"Product",links:[{l:"Features",v:"home"},{l:"How it works",v:"how-it-works"},{l:"Pricing",v:"pricing"},{l:"Get started",v:"login"}]},
+            {title:"Product",links:[{l:"Features",v:"home"},{l:"How it works",v:"how-it-works"},{l:"Find a Barber",v:"find-barber"},{l:"Pricing",v:"pricing"},{l:"Get started",v:"login"}]},
             {title:"Support",links:[{l:"FAQ",v:"faq"},{l:"Contact us",v:"contact"}]},
             {title:"Legal",links:[{l:"Privacy Policy",v:"privacy"},{l:"Terms of Service",v:"terms"}]},
           ].map(col=>(
@@ -1401,7 +1402,16 @@ function CustomerStatus({entryId}){
         )}
         {entry.status==="called"&&(<div style={{...S.card,background:"#fefce8",border:"1px solid #fde047",textAlign:"center",padding:"2rem"}}><div style={{fontSize:40,marginBottom:10}}>🔔</div><h3 style={{fontWeight:800,fontSize:18,color:"#92400e",margin:"0 0 6px"}}>You've been called!</h3><p style={{color:"#b45309",fontSize:14,margin:0}}>Please make your way to the shop now.</p></div>)}
         {entry.status==="on_chair"&&(<div style={{...S.card,background:"#f0fdf4",border:"1px solid #86efac",textAlign:"center",padding:"2rem"}}><div style={{fontSize:40,marginBottom:10}}>✂️</div><h3 style={{fontWeight:800,fontSize:18,color:"#166534",margin:"0 0 6px"}}>You're being served!</h3>{brb&&<p style={{color:"#15803d",fontSize:14,margin:0}}>Barber: {brb.name}</p>}</div>)}
-        {entry.status==="done"&&(<div style={{...S.card,textAlign:"center",padding:"2rem"}}><div style={{fontSize:40,marginBottom:10}}>🎉</div><h3 style={{fontWeight:800,fontSize:18,color:C.navy,margin:"0 0 6px"}}>All done — enjoy your fresh cut!</h3><p style={S.muted}>Thanks for visiting. See you next time.</p></div>)}
+        {entry.status==="done"&&(
+          <div>
+            <div style={{...S.card,textAlign:"center",padding:"2rem",marginBottom:16}}>
+              <div style={{fontSize:40,marginBottom:10}}>🎉</div>
+              <h3 style={{fontWeight:800,fontSize:18,color:C.navy,margin:"0 0 6px"}}>All done — enjoy your fresh cut!</h3>
+              <p style={S.muted}>Thanks for visiting. See you next time.</p>
+            </div>
+            <RatingPrompt entry={{...entry,shop_name:null}} onDone={()=>{}}/>
+          </div>
+        )}
         <div style={{...S.card,marginTop:16}}>
           <h3 style={{fontSize:15,fontWeight:700,color:C.navy,margin:"0 0 12px"}}>Your booking</h3>
           {[{l:"Service",v:svc?.name},{l:"Barber",v:brb?.name},{l:"Position",v:`#${entry.position}`}].filter(r=>r.v).map(r=>(
@@ -1428,6 +1438,8 @@ function AdminDashboard({user,onLogout,onNavigate}){
   const [tab,setTab]=useState("queue");
   const [shopName,setShopName]=useState("");
   const [shopSlug,setShopSlug]=useState("");
+  const [shopPostcode,setShopPostcode]=useState("");
+  const [shopArea,setShopArea]=useState("");
   const [nBar,setNBar]=useState("");
   const [nBarPin,setNBarPin]=useState("");
   const [nSvcName,setNSvcName]=useState("");
@@ -1476,7 +1488,7 @@ function AdminDashboard({user,onLogout,onNavigate}){
 
   async function createShop(){
     if(!shopName.trim()||!shopSlug.trim()) return alert("Fill in all fields.");
-    const {data,error}=await supabase.from("shops").insert({name:shopName,slug:shopSlug,owner_id:user.id}).select().single();
+    const {data,error}=await supabase.from("shops").insert({name:shopName,slug:shopSlug,owner_id:user.id,postcode:shopPostcode.trim()||null,area:shopArea.trim()||null}).select().single();
     if(error){alert(error.message);return;}
     setShop(data);
   }
@@ -1545,6 +1557,10 @@ function AdminDashboard({user,onLogout,onNavigate}){
           <p style={{...S.muted,marginBottom:"1.5rem"}}>Create your shop to get started with ZentriqFlow.</p>
           <label style={S.label}>Shop name</label>
           <input style={S.input} placeholder="The Barber Shop" value={shopName} onChange={e=>setShopName(e.target.value)}/>
+          <label style={S.label}>Postcode <span style={{color:C.indigo,fontSize:11,fontWeight:700,marginLeft:4}}>Used so customers can find you</span></label>
+          <input style={S.input} placeholder="e.g. LS1 4AB" value={shopPostcode} onChange={e=>setShopPostcode(e.target.value.toUpperCase())}/>
+          <label style={S.label}>Area / neighbourhood (optional)</label>
+          <input style={S.input} placeholder="e.g. Leeds City Centre" value={shopArea} onChange={e=>setShopArea(e.target.value)}/>
           <label style={S.label}>URL slug (no spaces)</label>
           <input style={S.input} placeholder="my-barber-shop" value={shopSlug} onChange={e=>setShopSlug(e.target.value.toLowerCase().replace(/\s+/g,"-"))}/>
           <p style={{...S.muted,marginBottom:"1rem"}}>Customer link: <strong style={{color:C.navy}}>/shop/{shopSlug||"your-slug"}</strong></p>
@@ -1699,7 +1715,8 @@ export default function App(){
   const [entryId,setEntryId]=useState(null);
   const [user,setUser]=useState(null);
 
-  function navigate(v,hash){
+  function navigate(v,hash,slug){
+    if(slug){ window.location.href=`/shop/${slug}`; return; }
     setView(v);
     if(hash) setTimeout(()=>document.getElementById(hash)?.scrollIntoView({behavior:"smooth"}),100);
     window.scrollTo({top:0,behavior:"smooth"});
@@ -1727,5 +1744,364 @@ export default function App(){
   if(view==="privacy") return <PrivacyPage onNavigate={navigate} user={user}/>;
   if(view==="terms") return <TermsPage onNavigate={navigate} user={user}/>;
   if(view==="pricing") return <PricingPage onNavigate={navigate} user={user}/>;
+  if(view==="find-barber") return <FindBarberPage onNavigate={navigate} user={user}/>;
   return <HeroPage onNavigate={navigate} user={user}/>;
+}
+
+// ─── STAR RATING COMPONENT ────────────────────────────────────
+function Stars({rating,max=5,size=16,interactive=false,onRate}){
+  const [hov,setHov]=useState(0);
+  const display=hov||rating;
+  return (
+    <div style={{display:"flex",gap:2,alignItems:"center"}}>
+      {Array.from({length:max}).map((_,i)=>{
+        const filled=i<display;
+        return (
+          <span key={i}
+            onClick={interactive?()=>onRate&&onRate(i+1):undefined}
+            onMouseEnter={interactive?()=>setHov(i+1):undefined}
+            onMouseLeave={interactive?()=>setHov(0):undefined}
+            style={{fontSize:size,cursor:interactive?"pointer":"default",color:filled?"#f59e0b":"#d1d5db",transition:"color 0.1s",lineHeight:1}}>
+            ★
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── RATING PROMPT (shown after status = done) ────────────────
+function RatingPrompt({entry,onDone}){
+  const [rating,setRating]=useState(0);
+  const [text,setText]=useState("");
+  const [submitted,setSubmitted]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const [alreadyRated,setAlreadyRated]=useState(false);
+
+  useEffect(()=>{
+    // Check if already reviewed
+    supabase.from("reviews").select("id").eq("queue_entry_id",entry.id).single()
+      .then(({data})=>{ if(data) setAlreadyRated(true); });
+  },[entry.id]);
+
+  async function submit(){
+    if(rating===0) return;
+    setLoading(true);
+    await supabase.from("reviews").insert({
+      shop_id:entry.shop_id,
+      queue_entry_id:entry.id,
+      customer_name:entry.customer_name,
+      rating,
+      review_text:text.trim()||null,
+    });
+    setLoading(false);
+    setSubmitted(true);
+    setTimeout(()=>onDone&&onDone(),2500);
+  }
+
+  if(alreadyRated||submitted) return (
+    <div style={{...S.card,textAlign:"center",padding:"2rem",background:"#f0fdf4",border:"1px solid #86efac"}}>
+      <div style={{fontSize:40,marginBottom:10}}>🙏</div>
+      <h3 style={{fontSize:17,fontWeight:800,color:"#166534",margin:"0 0 6px"}}>Thanks for your feedback!</h3>
+      <p style={{...S.muted,color:"#15803d"}}>Your review helps other customers find great barbers.</p>
+    </div>
+  );
+
+  return (
+    <div style={{...S.card,padding:"1.75rem",border:`2px solid ${C.indigo}30`,boxShadow:"0 8px 32px rgba(67,97,238,0.1)"}}>
+      <div style={{marginBottom:"1.25rem"}}>
+        <div style={{fontWeight:800,fontSize:17,color:C.navy,marginBottom:4}}>How was your experience?</div>
+        <div style={{...S.muted}}>at {entry.shop_name||"the barbershop"} · {entry.customer_name}</div>
+      </div>
+      <div style={{marginBottom:"1.25rem"}}>
+        <Stars rating={rating} size={36} interactive onRate={setRating}/>
+        {rating>0&&<div style={{fontSize:13,color:C.textMid,marginTop:6}}>
+          {["","Poor","Fair","Good","Great","Excellent!"][rating]}
+        </div>}
+      </div>
+      <textarea
+        style={{...S.input,minHeight:80,resize:"vertical",fontFamily:"inherit",marginBottom:12}}
+        placeholder="Leave a short review (optional)"
+        value={text}
+        onChange={e=>setText(e.target.value)}
+        maxLength={200}
+      />
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <Btn v="grad" full onClick={submit} disabled={loading||rating===0}>
+          {loading?"Submitting…":"Submit review"}
+        </Btn>
+        <button onClick={()=>onDone&&onDone()} style={{background:"none",border:"none",cursor:"pointer",color:C.textLight,fontSize:13,fontFamily:"inherit",whiteSpace:"nowrap"}}>
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── QUEUE STATUS BADGE ───────────────────────────────────────
+function QueueBadge({count}){
+  const config = count===0
+    ? {label:"Open now",color:"#10b981",bg:"#f0fdf4",border:"#86efac"}
+    : count<=3
+    ? {label:"Quiet",color:"#10b981",bg:"#f0fdf4",border:"#86efac"}
+    : count<=7
+    ? {label:"Moderate",color:"#f59e0b",bg:"#fffbeb",border:"#fde68a"}
+    : {label:"Busy",color:"#ef4444",bg:"#fef2f2",border:"#fecaca"};
+  return (
+    <span style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:99,fontSize:12,fontWeight:700,background:config.bg,color:config.color,border:`1px solid ${config.border}`}}>
+      <span style={{width:6,height:6,borderRadius:"50%",background:config.color,display:"inline-block"}}/>
+      {config.label}
+    </span>
+  );
+}
+
+// ─── SHOP CARD ────────────────────────────────────────────────
+function ShopCard({shop,onNavigate}){
+  const [h,setH]=useState(false);
+  const waiting=shop.queue_count||0;
+  const avgRating=shop.avg_rating||0;
+  const reviewCount=shop.review_count||0;
+  const estWait=shop.avg_duration?waiting*shop.avg_duration:waiting*20;
+
+  return (
+    <div
+      style={{...S.card,padding:"1.5rem",boxShadow:h?shadow.lg:shadow.sm,transform:h?"translateY(-3px)":"none",cursor:"pointer",border:h?`1px solid ${C.indigo}40`:S.card.border}}
+      onMouseEnter={()=>setH(true)}
+      onMouseLeave={()=>setH(false)}
+      onClick={()=>onNavigate("join",null,shop.slug)}
+    >
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12,gap:8}}>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:17,color:C.navy,marginBottom:3,letterSpacing:"-0.3px"}}>{shop.name}</div>
+          {shop.postcode&&<div style={{fontSize:13,color:C.textLight,display:"flex",alignItems:"center",gap:4}}>
+            <span>📍</span>{shop.postcode}{shop.area?` · ${shop.area}`:""}
+          </div>}
+        </div>
+        <QueueBadge count={waiting}/>
+      </div>
+
+      {/* Rating */}
+      {reviewCount>0?(
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+          <Stars rating={Math.round(avgRating)} size={14}/>
+          <span style={{fontWeight:700,fontSize:14,color:C.navy}}>{avgRating.toFixed(1)}</span>
+          <span style={{fontSize:13,color:C.textLight}}>({reviewCount} review{reviewCount!==1?"s":""})</span>
+        </div>
+      ):(
+        <div style={{fontSize:13,color:C.textLight,marginBottom:12,fontStyle:"italic"}}>No reviews yet — be the first</div>
+      )}
+
+      {/* Live queue */}
+      <div style={{background:C.bgAlt,borderRadius:12,padding:"12px 14px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>Live queue</div>
+          <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+            <span style={{fontSize:26,fontWeight:900,color:waiting===0?C.success:waiting<=4?C.indigo:"#ef4444",letterSpacing:"-0.5px"}}>{waiting}</span>
+            <span style={{fontSize:13,color:C.textMid}}>{waiting===1?"person":"people"} waiting</span>
+          </div>
+        </div>
+        {waiting>0&&(
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>Est. wait</div>
+            <div style={{fontSize:18,fontWeight:800,color:C.navy}}>~{estWait}m</div>
+          </div>
+        )}
+      </div>
+
+      {/* Services */}
+      {shop.services&&shop.services.length>0&&(
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+          {shop.services.slice(0,3).map(s=>(
+            <span key={s.id} style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:99,background:C.indigoLight,color:C.indigo}}>
+              {s.name}
+            </span>
+          ))}
+          {shop.services.length>3&&<span style={{fontSize:12,color:C.textLight,alignSelf:"center"}}>+{shop.services.length-3} more</span>}
+        </div>
+      )}
+
+      {/* CTA */}
+      <Btn v="grad" full size="md" onClick={e=>{e.stopPropagation();onNavigate("join",null,shop.slug);}}>
+        Join queue →
+      </Btn>
+    </div>
+  );
+}
+
+// ─── FIND A BARBER PAGE ───────────────────────────────────────
+function FindBarberPage({onNavigate,user}){
+  const [postcode,setPostcode]=useState("");
+  const [searched,setSearched]=useState(false);
+  const [shops,setShops]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [allShops,setAllShops]=useState([]);
+  const [filter,setFilter]=useState("all"); // all | quiet | busy
+  const [liveTimer,setLiveTimer]=useState(0);
+
+  // Load all shops on mount + set up live refresh every 30s
+  useEffect(()=>{
+    loadAllShops();
+    const interval=setInterval(()=>{
+      setLiveTimer(t=>t+1);
+    },30000);
+    return ()=>clearInterval(interval);
+  },[]);
+
+  useEffect(()=>{ if(allShops.length>0) loadAllShops(); },[liveTimer]);
+
+  async function loadAllShops(){
+    const {data:shopsData}=await supabase.from("shops").select("id,name,slug,postcode,area");
+    if(!shopsData) return;
+
+    // For each shop, get queue count, services, avg rating
+    const enriched=await Promise.all(shopsData.map(async shop=>{
+      const [{count:queueCount},{data:services},{data:reviewData}]=await Promise.all([
+        supabase.from("queue_entries").select("*",{count:"exact",head:true}).eq("shop_id",shop.id).in("status",["waiting","called","on_chair"]),
+        supabase.from("services").select("id,name,price,duration").eq("shop_id",shop.id).limit(5),
+        supabase.from("reviews").select("rating").eq("shop_id",shop.id),
+      ]);
+      const avgRating=reviewData&&reviewData.length>0
+        ? reviewData.reduce((s,r)=>s+r.rating,0)/reviewData.length : 0;
+      const avgDuration=services&&services.length>0
+        ? services.reduce((s,sv)=>s+(sv.duration||20),0)/services.length : 20;
+      return {...shop,queue_count:queueCount||0,services:services||[],avg_rating:avgRating,review_count:reviewData?.length||0,avg_duration:avgDuration};
+    }));
+    setAllShops(enriched);
+    if(searched) applyFilter(enriched,postcode,filter);
+  }
+
+  function applyFilter(src,pc,f){
+    let result=[...src];
+    if(pc.trim()){
+      // Simple postcode area match — first 2-4 chars
+      const area=pc.trim().toUpperCase().replace(/\s/g,"").substring(0,4);
+      const area2=pc.trim().toUpperCase().replace(/\s/g,"").substring(0,3);
+      const area3=pc.trim().toUpperCase().replace(/\s/g,"").substring(0,2);
+      result=result.filter(s=>{
+        if(!s.postcode) return true; // show all if no postcode set
+        const sp=s.postcode.toUpperCase().replace(/\s/g,"");
+        return sp.startsWith(area3)||sp.startsWith(area2)||sp.startsWith(area);
+      });
+    }
+    if(f==="quiet") result=result.filter(s=>s.queue_count<=3);
+    if(f==="busy") result=result.filter(s=>s.queue_count>3);
+    // Sort by queue count ascending (quietest first), then by rating desc
+    result.sort((a,b)=>a.queue_count-b.queue_count||(b.avg_rating-a.avg_rating));
+    setShops(result);
+  }
+
+  async function search(){
+    if(!postcode.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    applyFilter(allShops,postcode,filter);
+    setLoading(false);
+  }
+
+  const displayShops=searched?shops:allShops;
+
+  return (
+    <div style={S.app}>
+      <Navbar onNavigate={onNavigate} user={user} currentView="find-barber"/>
+
+      {/* HERO */}
+      <section style={{background:`radial-gradient(ellipse 80% 50% at 50% -10%,rgba(67,97,238,0.1) 0%,transparent 60%),#fff`,padding:"4rem 0 3rem"}}>
+        <div style={{...S.container,textAlign:"center"}}>
+          <div style={S.chip}>💈 Live barbershop finder</div>
+          <h1 style={{fontSize:"clamp(30px,5.5vw,60px)",fontWeight:900,letterSpacing:"-2px",color:C.navy,margin:"1rem 0 1rem",lineHeight:1.05}}>
+            Find a barbershop near you<br/>
+            <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>and join the queue instantly</span>
+          </h1>
+          <p style={{fontSize:18,color:C.textMid,maxWidth:500,margin:"0 auto 2.5rem",lineHeight:1.7}}>
+            See how busy nearby shops are right now. Skip the wait — come back at the perfect time.
+          </p>
+
+          {/* Search bar */}
+          <div style={{maxWidth:520,margin:"0 auto",display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center"}}>
+            <div style={{flex:1,minWidth:240,position:"relative"}}>
+              <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:18,pointerEvents:"none"}}>📍</span>
+              <input
+                style={{...S.input,paddingLeft:42,marginBottom:0,fontSize:16,height:52,border:`1.5px solid ${C.border}`,borderRadius:14,boxShadow:shadow.sm}}
+                placeholder="Enter your postcode (e.g. LS1 4AB)"
+                value={postcode}
+                onChange={e=>setPostcode(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&search()}
+              />
+            </div>
+            <Btn v="primary" size="lg" onClick={search} style={{height:52,borderRadius:14,whiteSpace:"nowrap"}}>
+              {loading?"Searching…":"Find barbers"}
+            </Btn>
+          </div>
+
+          {/* Trust line */}
+          <p style={{...S.muted,marginTop:14,fontSize:13}}>
+            Only barbershops using ZentriqFlow are listed · Updates every 30 seconds
+          </p>
+        </div>
+      </section>
+
+      {/* FILTERS + RESULTS */}
+      <section style={{padding:"2rem 0 5rem"}}>
+        <div style={S.container}>
+          {/* Filter bar */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginBottom:"1.5rem"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:14,fontWeight:600,color:C.navy}}>{displayShops.length} shop{displayShops.length!==1?"s":""} found</span>
+              <div style={{width:8,height:8,borderRadius:"50%",background:"#10b981",boxShadow:"0 0 6px #10b981"}}/>
+              <span style={{fontSize:12,color:C.textLight}}>Live</span>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              {[{v:"all",l:"All shops"},{v:"quiet",l:"🟢 Quiet"},{v:"busy",l:"🔴 Busy"}].map(f=>(
+                <button key={f.v} onClick={()=>{setFilter(f.v);applyFilter(allShops,postcode,f.v);}}
+                  style={{padding:"7px 16px",borderRadius:99,border:`1.5px solid ${filter===f.v?C.indigo:C.border}`,background:filter===f.v?C.indigoLight:"#fff",color:filter===f.v?C.indigo:C.textMid,fontSize:13,fontWeight:filter===f.v?700:500,cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>
+                  {f.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Shop grid */}
+          {displayShops.length>0?(
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:20}}>
+              {displayShops.map(shop=>(
+                <ShopCard key={shop.id} shop={shop} onNavigate={(v,hash,slug)=>{
+                  if(slug) window.location.href=`/shop/${slug}`;
+                  else onNavigate(v,hash);
+                }}/>
+              ))}
+            </div>
+          ):(
+            <div style={{...S.card,textAlign:"center",padding:"4rem 2rem",background:C.bgAlt,border:`1px dashed ${C.border}`}}>
+              <div style={{fontSize:48,marginBottom:16}}>💈</div>
+              <h3 style={{fontSize:18,fontWeight:800,color:C.navy,marginBottom:8}}>
+                {searched?"No barbers found near this postcode yet":"Browse all listed barbershops"}
+              </h3>
+              <p style={{...S.muted,marginBottom:"1.5rem"}}>
+                {searched?"Be the first to bring ZentriqFlow to your area.":"All shops using ZentriqFlow will appear here."}
+              </p>
+              {searched&&<Btn v="primary" onClick={()=>onNavigate("login")}>Own a barbershop? Get listed →</Btn>}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* BOTTOM CTA */}
+      <section style={{background:C.gradDark,padding:"5rem 0",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-80,right:-80,width:350,height:350,borderRadius:"50%",background:"rgba(67,97,238,0.15)"}}/>
+        <div style={{position:"absolute",bottom:-60,left:-60,width:280,height:280,borderRadius:"50%",background:"rgba(124,58,237,0.12)"}}/>
+        <div style={{...S.container,textAlign:"center",position:"relative"}}>
+          <div style={{fontSize:40,marginBottom:16}}>🏪</div>
+          <h2 style={{fontSize:"clamp(24px,4vw,44px)",fontWeight:900,color:"#fff",letterSpacing:"-1.5px",margin:"0 0 1rem",lineHeight:1.1}}>Own a barbershop?</h2>
+          <p style={{fontSize:17,color:"rgba(255,255,255,0.65)",margin:"0 0 2.5rem",maxWidth:460,marginLeft:"auto",marginRight:"auto",lineHeight:1.7}}>
+            Get listed, manage your queue, and let customers find you locally. Join during early access and lock in your rate.
+          </p>
+          <Btn v="white" size="lg" onClick={()=>onNavigate("login")}>Get early access →</Btn>
+          <p style={{color:"rgba(255,255,255,0.35)",fontSize:13,marginTop:12}}>No credit card required · Setup done with you</p>
+        </div>
+      </section>
+
+      <Footer onNavigate={onNavigate}/>
+    </div>
+  );
 }
