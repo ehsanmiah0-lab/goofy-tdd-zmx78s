@@ -209,11 +209,11 @@ function Navbar({onNavigate,user,currentView}){
     return ()=>{window.removeEventListener("scroll",onScroll);window.removeEventListener("resize",onResize);};
   },[]);
   const links=[
-    {label:"Features",view:"home",hash:"features"},
-    {label:"How it works",view:"how-it-works"},
-    {label:"Find a Barber",view:"find-barber"},
-    {label:"Pricing",view:"pricing"},
-    {label:"Contact",view:"contact"},
+    {label:"⚡ Features",view:"home",hash:"features"},
+    {label:"💡 How it works",view:"how-it-works"},
+    {label:"💈 Find a Barber",view:"find-barber"},
+    {label:"💰 Pricing",view:"pricing"},
+    {label:"✉️ Contact",view:"contact"},
   ];
   return (
     <nav style={{...S.nav,boxShadow:scrolled?shadow.sm:"none"}}>
@@ -249,7 +249,7 @@ function Navbar({onNavigate,user,currentView}){
       {menu&&(
         <div style={{position:"fixed",top:68,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",zIndex:99}} onClick={()=>setMenu(false)}>
           <div style={{background:"#fff",padding:"1rem 1.5rem 1.5rem",boxShadow:shadow.xl}} onClick={e=>e.stopPropagation()}>
-            {[...links,{label:"💈 Find a Barber",view:"find-barber"},{label:"✂️ Barber login",view:"barber-login"},{label:"Log in",view:user?"admin":"login"},{label:"Get early access →",view:user?"admin":"login"}].map(l=>(
+            {[...links,{label:"✂️ Barber login",view:"barber-login"},{label:"Log in",view:user?"admin":"login"},{label:"Get early access →",view:user?"admin":"login"}].map(l=>(
               <button key={l.label} onClick={()=>{onNavigate(l.view,l.hash);setMenu(false);}}
                 style={{display:"block",width:"100%",textAlign:"left",padding:"14px 0",background:"none",border:"none",borderBottom:`1px solid ${C.border}`,cursor:"pointer",fontSize:16,fontWeight:l.label.includes("free")?700:500,color:l.label.includes("free")?C.indigo:C.navy,fontFamily:"inherit"}}>
                 {l.label}
@@ -1440,6 +1440,15 @@ function AdminDashboard({user,onLogout,onNavigate}){
   const [shopSlug,setShopSlug]=useState("");
   const [shopPostcode,setShopPostcode]=useState("");
   const [shopArea,setShopArea]=useState("");
+  const [hours,setHours]=useState({
+    mon:{open:true,from:"09:00",to:"18:00"},
+    tue:{open:true,from:"09:00",to:"18:00"},
+    wed:{open:true,from:"09:00",to:"18:00"},
+    thu:{open:true,from:"09:00",to:"18:00"},
+    fri:{open:true,from:"09:00",to:"18:00"},
+    sat:{open:true,from:"09:00",to:"17:00"},
+    sun:{open:false,from:"10:00",to:"16:00"},
+  });
   const [nBar,setNBar]=useState("");
   const [nBarPin,setNBarPin]=useState("");
   const [nSvcName,setNSvcName]=useState("");
@@ -1467,6 +1476,7 @@ function AdminDashboard({user,onLogout,onNavigate}){
       const {data:sh}=await supabase.from("shops").select("*").eq("owner_id",user.id).single();
       if(!sh) return;
       setShop(sh); loadQ(sh.id);
+      if(sh.opening_hours) setHours(sh.opening_hours);
       const {data:b}=await supabase.from("barbers").select("*").eq("shop_id",sh.id); setBarbers(b||[]);
       const {data:s}=await supabase.from("services").select("*").eq("shop_id",sh.id); setServices(s||[]);
     }
@@ -1491,6 +1501,19 @@ function AdminDashboard({user,onLogout,onNavigate}){
     const {data,error}=await supabase.from("shops").insert({name:shopName,slug:shopSlug,owner_id:user.id,postcode:shopPostcode.trim()||null,area:shopArea.trim()||null}).select().single();
     if(error){alert(error.message);return;}
     setShop(data);
+  }
+
+  async function saveHours(){
+    await supabase.from("shops").update({opening_hours:hours}).eq("id",shop.id);
+    alert("Opening hours saved!");
+  }
+
+  function toggleDay(day){
+    setHours(h=>({...h,[day]:{...h[day],open:!h[day].open}}));
+  }
+
+  function setTime(day,field,val){
+    setHours(h=>({...h,[day]:{...h[day],[field]:val}}));
   }
 
   async function updateStatus(id,status,bid){
@@ -1609,7 +1632,13 @@ function AdminDashboard({user,onLogout,onNavigate}){
 
         {/* Tabs */}
         <div style={{display:"flex",borderBottom:`2px solid ${C.border}`,marginBottom:"1.5rem"}}>
-          {["queue","barbers","services"].map(t=><button key={t} style={S.tab(tab===t)} onClick={()=>setTab(t)}>{t==="queue"?`Queue (${queue.filter(q=>q.status!=="cancelled"&&q.status!=="done").length})`:t.charAt(0).toUpperCase()+t.slice(1)}</button>)}
+          {["queue","barbers","services","hours"].map(t=>(
+            <button key={t} style={S.tab(tab===t)} onClick={()=>setTab(t)}>
+              {t==="queue"?`Queue (${queue.filter(q=>q.status!=="cancelled"&&q.status!=="done").length})`:
+               t==="hours"?"🕐 Hours":
+               t.charAt(0).toUpperCase()+t.slice(1)}
+            </button>
+          ))}
         </div>
 
         {/* Queue Tab */}
@@ -1702,6 +1731,43 @@ function AdminDashboard({user,onLogout,onNavigate}){
             </div>
           </div>
         )}
+        {/* Hours Tab */}
+        {tab==="hours"&&(
+          <div>
+            <div style={{...S.card,background:C.indigoLight,border:`1px solid ${C.indigo}25`,marginBottom:20}}>
+              <p style={{...S.muted,margin:0}}>🕐 Set your opening hours so customers know when you're open. These display on the <strong>Find a Barber</strong> page.</p>
+            </div>
+            <div style={S.card}>
+              <h3 style={{fontSize:16,fontWeight:700,color:C.navy,margin:"0 0 16px"}}>Opening hours</h3>
+              {Object.entries(hours).map(([day,val])=>(
+                <div key={day} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:`1px solid ${C.border}`,flexWrap:"wrap"}}>
+                  {/* Toggle */}
+                  <button onClick={()=>toggleDay(day)} style={{width:44,height:24,borderRadius:99,border:"none",cursor:"pointer",background:val.open?"#4361ee":"#d1d5db",position:"relative",transition:"background 0.2s",flexShrink:0}}>
+                    <span style={{position:"absolute",top:2,left:val.open?22:2,width:20,height:20,borderRadius:"50%",background:"#fff",boxShadow:"0 1px 4px rgba(0,0,0,0.2)",transition:"left 0.2s"}}/>
+                  </button>
+                  {/* Day name */}
+                  <span style={{fontWeight:700,color:C.navy,fontSize:14,width:36,textTransform:"capitalize",flexShrink:0}}>{day.charAt(0).toUpperCase()+day.slice(1)}</span>
+                  {val.open?(
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                      <input type="time" value={val.from} onChange={e=>setTime(day,"from",e.target.value)}
+                        style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${C.border}`,fontSize:14,color:C.navy,fontFamily:"inherit",cursor:"pointer"}}/>
+                      <span style={{color:C.textLight,fontSize:14,fontWeight:500}}>to</span>
+                      <input type="time" value={val.to} onChange={e=>setTime(day,"to",e.target.value)}
+                        style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${C.border}`,fontSize:14,color:C.navy,fontFamily:"inherit",cursor:"pointer"}}/>
+                      <span style={{fontSize:13,fontWeight:600,color:"#10b981",background:"#f0fdf4",border:"1px solid #86efac",borderRadius:99,padding:"2px 10px"}}>Open</span>
+                    </div>
+                  ):(
+                    <span style={{fontSize:13,fontWeight:600,color:"#ef4444",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:99,padding:"3px 12px"}}>Closed</span>
+                  )}
+                </div>
+              ))}
+              <div style={{marginTop:20}}>
+                <Btn v="indigo" onClick={saveHours}>Save opening hours</Btn>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={{height:40}}/>
       </div>
     </div>
@@ -1855,6 +1921,64 @@ function QueueBadge({count}){
   );
 }
 
+// ─── OPENING HOURS HELPERS ───────────────────────────────────
+const DAY_KEYS=["sun","mon","tue","wed","thu","fri","sat"];
+const DAY_LABELS={sun:"Sun",mon:"Mon",tue:"Tue",wed:"Wed",thu:"Thu",fri:"Fri",sat:"Sat"};
+
+function isOpenNow(hours){
+  if(!hours) return null;
+  const now=new Date();
+  const dayKey=DAY_KEYS[now.getDay()];
+  const day=hours[dayKey];
+  if(!day||!day.open) return false;
+  const [fh,fm]=(day.from||"09:00").split(":").map(Number);
+  const [th,tm]=(day.to||"18:00").split(":").map(Number);
+  const nowMins=now.getHours()*60+now.getMinutes();
+  return nowMins>=fh*60+fm && nowMins<th*60+tm;
+}
+
+function getTodayHours(hours){
+  if(!hours) return null;
+  const now=new Date();
+  const dayKey=DAY_KEYS[now.getDay()];
+  const day=hours[dayKey];
+  if(!day) return null;
+  if(!day.open) return "Closed today";
+  return `${day.from} – ${day.to}`;
+}
+
+function HoursGrid({hours}){
+  if(!hours) return null;
+  const days=["mon","tue","wed","thu","fri","sat","sun"];
+  const now=new Date();
+  const todayKey=DAY_KEYS[now.getDay()];
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:12}}>
+      {days.map(d=>{
+        const val=hours[d];
+        const isToday=d===todayKey;
+        const isOpen=val?.open;
+        return (
+          <div key={d} style={{textAlign:"center"}}>
+            <div style={{fontSize:10,fontWeight:700,color:isToday?C.indigo:C.textLight,marginBottom:3,textTransform:"uppercase"}}>{DAY_LABELS[d]}</div>
+            <div style={{padding:"4px 2px",borderRadius:8,background:isOpen?(isToday?C.indigoLight:"#f0fdf4"):"#fef2f2",border:isToday?`1.5px solid ${C.indigo}`:"1px solid transparent"}}>
+              {isOpen?(
+                <div>
+                  <div style={{fontSize:9,fontWeight:700,color:isOpen?"#10b981":"#ef4444"}}>●</div>
+                  <div style={{fontSize:9,color:C.textMid,lineHeight:1.3}}>{val.from}</div>
+                  <div style={{fontSize:9,color:C.textMid}}>{val.to}</div>
+                </div>
+              ):(
+                <div style={{fontSize:10,fontWeight:700,color:"#ef4444",padding:"4px 0"}}>✕</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── SHOP CARD ────────────────────────────────────────────────
 function ShopCard({shop,onNavigate}){
   const [h,setH]=useState(false);
@@ -1909,6 +2033,25 @@ function ShopCard({shop,onNavigate}){
         )}
       </div>
 
+      {/* Opening hours grid */}
+      {shop.opening_hours&&(
+        <div style={{marginBottom:4}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <span style={{fontSize:11,fontWeight:700,color:C.textLight,textTransform:"uppercase",letterSpacing:0.8}}>Opening hours</span>
+            {isOpenNow(shop.opening_hours)===true&&(
+              <span style={{fontSize:11,fontWeight:700,color:"#10b981",background:"#f0fdf4",border:"1px solid #86efac",borderRadius:99,padding:"2px 8px"}}>Open now</span>
+            )}
+            {isOpenNow(shop.opening_hours)===false&&(
+              <span style={{fontSize:11,fontWeight:700,color:"#ef4444",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:99,padding:"2px 8px"}}>Closed now</span>
+            )}
+          </div>
+          <HoursGrid hours={shop.opening_hours}/>
+          <div style={{fontSize:12,color:C.textMid,marginBottom:10}}>
+            Today: <strong style={{color:C.navy}}>{getTodayHours(shop.opening_hours)}</strong>
+          </div>
+        </div>
+      )}
+
       {/* Services */}
       {shop.services&&shop.services.length>0&&(
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
@@ -1951,7 +2094,7 @@ function FindBarberPage({onNavigate,user}){
   useEffect(()=>{ if(allShops.length>0) loadAllShops(); },[liveTimer]);
 
   async function loadAllShops(){
-    const {data:shopsData}=await supabase.from("shops").select("id,name,slug,postcode,area");
+    const {data:shopsData}=await supabase.from("shops").select("id,name,slug,postcode,area,opening_hours");
     if(!shopsData) return;
 
     // For each shop, get queue count, services, avg rating
@@ -1965,7 +2108,7 @@ function FindBarberPage({onNavigate,user}){
         ? reviewData.reduce((s,r)=>s+r.rating,0)/reviewData.length : 0;
       const avgDuration=services&&services.length>0
         ? services.reduce((s,sv)=>s+(sv.duration||20),0)/services.length : 20;
-      return {...shop,queue_count:queueCount||0,services:services||[],avg_rating:avgRating,review_count:reviewData?.length||0,avg_duration:avgDuration};
+      return {...shop,queue_count:queueCount||0,services:services||[],avg_rating:avgRating,review_count:reviewData?.length||0,avg_duration:avgDuration,opening_hours:shop.opening_hours||null};
     }));
     setAllShops(enriched);
     if(searched) applyFilter(enriched,postcode,filter);
@@ -1999,7 +2142,7 @@ function FindBarberPage({onNavigate,user}){
     setLoading(false);
   }
 
-  const displayShops=searched?shops:allShops;
+  const displayShops=searched?shops:[];
 
   return (
     <div style={S.app}>
@@ -2044,7 +2187,8 @@ function FindBarberPage({onNavigate,user}){
       {/* FILTERS + RESULTS */}
       <section style={{padding:"2rem 0 5rem"}}>
         <div style={S.container}>
-          {/* Filter bar */}
+          {/* Filter bar — only shown after search */}
+          {searched&&(
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginBottom:"1.5rem"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:14,fontWeight:600,color:C.navy}}>{displayShops.length} shop{displayShops.length!==1?"s":""} found</span>
@@ -2060,9 +2204,17 @@ function FindBarberPage({onNavigate,user}){
               ))}
             </div>
           </div>
+          )}
 
           {/* Shop grid */}
-          {displayShops.length>0?(
+          {!searched?(
+            /* Pre-search state */
+            <div style={{textAlign:"center",padding:"4rem 2rem"}}>
+              <div style={{fontSize:56,marginBottom:16}}>💈</div>
+              <h3 style={{fontSize:20,fontWeight:800,color:C.navy,marginBottom:8}}>Enter your postcode above</h3>
+              <p style={{...S.muted,maxWidth:400,margin:"0 auto"}}>We'll show you live queue data for barbershops near you so you can pick the best time to go.</p>
+            </div>
+          ):displayShops.length>0?(
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:20}}>
               {displayShops.map(shop=>(
                 <ShopCard key={shop.id} shop={shop} onNavigate={(v,hash,slug)=>{
@@ -2073,14 +2225,10 @@ function FindBarberPage({onNavigate,user}){
             </div>
           ):(
             <div style={{...S.card,textAlign:"center",padding:"4rem 2rem",background:C.bgAlt,border:`1px dashed ${C.border}`}}>
-              <div style={{fontSize:48,marginBottom:16}}>💈</div>
-              <h3 style={{fontSize:18,fontWeight:800,color:C.navy,marginBottom:8}}>
-                {searched?"No barbers found near this postcode yet":"Browse all listed barbershops"}
-              </h3>
-              <p style={{...S.muted,marginBottom:"1.5rem"}}>
-                {searched?"Be the first to bring ZentriqFlow to your area.":"All shops using ZentriqFlow will appear here."}
-              </p>
-              {searched&&<Btn v="primary" onClick={()=>onNavigate("login")}>Own a barbershop? Get listed →</Btn>}
+              <div style={{fontSize:48,marginBottom:16}}>🔍</div>
+              <h3 style={{fontSize:18,fontWeight:800,color:C.navy,marginBottom:8}}>No barbers found near this postcode yet</h3>
+              <p style={{...S.muted,marginBottom:"1.5rem"}}>Be the first to bring ZentriqFlow to your area.</p>
+              <Btn v="primary" onClick={()=>onNavigate("login")}>Own a barbershop? Get listed →</Btn>
             </div>
           )}
         </div>
