@@ -452,7 +452,7 @@ function HomePage({onNavigate,user}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,maxWidth:860,margin:"0 auto"}}>
             {[
               {name:"Pro",price:"£29",period:"/month",desc:"For barbers & takeaways ready to run a tighter operation.",features:["1 location","Unlimited staff","Unlimited queue/orders","QR code joining","Email notifications","Daily earnings tracking","Customer ratings","Priority support"],popular:true,cta:"Get early access",ctaV:"grad"},
-              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and growing chains.",features:["Multiple locations","Unlimited staff","Everything in Pro","Multi-location dashboard","Custom domain","Dedicated support","API access"],popular:false,cta:"Talk to us",ctaV:"outline"},
+              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and growing chains.",features:["Multiple locations","Unlimited staff","Everything in Pro","Multi-location dashboard","Dedicated support","API access"],popular:false,cta:"Talk to us",ctaV:"outline"},
             ].map(p=><PricingCard key={p.name} {...p} onNavigate={onNavigate}/>)}
           </div>
           <div style={{maxWidth:540,margin:"2rem auto 0",textAlign:"center"}}>
@@ -1019,9 +1019,9 @@ function TakeawayOrderPage({shopSlug}){
             </>
           )}
 
-          <label style={S.label}>Email (optional)</label>
-          <input style={S.input} type="email" placeholder="for order updates" value={email} onChange={e=>setEmail(e.target.value)}/>
-          <label style={S.label}>Phone (optional)</label>
+          <label style={S.label}>Email address</label>
+          <input style={S.input} type="email" placeholder="your@email.com" value={email} onChange={e=>setEmail(e.target.value)}/>
+          <label style={S.label}>Phone number</label>
           <input style={S.input} placeholder="+44 7700 000000" value={phone} onChange={e=>setPhone(e.target.value)}/>
         </div>
 
@@ -2324,7 +2324,7 @@ function PricingPage({onNavigate,user}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,marginBottom:"3rem"}}>
             {[
               {name:"Pro",price:"£29",period:"/month",desc:"For barbers & takeaways ready to run a tighter operation.",features:["1 location","Unlimited staff","Unlimited queue/orders","QR code joining","Email notifications","Daily earnings tracking","Customer ratings","Priority support"],popular:true,cta:"Get early access",ctaV:"grad"},
-              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and growing chains.",features:["Multiple locations","Unlimited staff","Everything in Pro","Multi-location dashboard","Custom domain","Dedicated support","API access"],popular:false,cta:"Talk to us",ctaV:"outline"},
+              {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and growing chains.",features:["Multiple locations","Unlimited staff","Everything in Pro","Multi-location dashboard","Dedicated support","API access"],popular:false,cta:"Talk to us",ctaV:"outline"},
             ].map(p=><PricingCard key={p.name} {...p} onNavigate={onNavigate}/>)}
           </div>
           <div style={{...S.card,maxWidth:700,margin:"0 auto",background:"linear-gradient(135deg,#eef2ff,#f5f3ff)",border:`1px solid ${C.indigo}25`,padding:"2rem",textAlign:"center"}}>
