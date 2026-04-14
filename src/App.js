@@ -142,7 +142,7 @@ function Navbar({onNavigate,user,currentView}){
   const links=[
     {label:"⚡ Features",view:"home",hash:"features"},
     {label:"💡 How it works",view:"how-it-works"},
-    {label:"💈 Find a Business",view:"find-barber"},
+    {label:"🏢 Find a Business",view:"find-barber"},
     {label:"💰 Pricing",view:"pricing"},
   ];
   return (
@@ -177,7 +177,6 @@ function Navbar({onNavigate,user,currentView}){
           <div style={{background:"#fff",padding:"1rem 1.5rem 1.5rem",boxShadow:shadow.xl}} onClick={e=>e.stopPropagation()}>
             {[...links,
               {label:"✂️ Staff login",view:"barber-login"},
-              {label:"🍔 Find a Business",view:"find-barber"},
               {label:"Log in",view:user?"admin":"login"},
               {label:"Get early access →",view:user?"admin":"login"}
             ].map(l=>(
@@ -877,6 +876,8 @@ function TakeawayOrderPage({shopSlug}){
   const [email,setEmail]=useState("");
   const [phone,setPhone]=useState("");
   const [carReg,setCarReg]=useState("");
+  const [collectionMethod,setCollectionMethod]=useState("collection");
+  const [deliveryAddress,setDeliveryAddress]=useState("");
   const [loading,setLoading]=useState(false);
   const [order,setOrder]=useState(null);
 
@@ -929,6 +930,8 @@ function TakeawayOrderPage({shopSlug}){
       items:basket,
       total_price:total,
       status:"pending",
+      collection_method:collectionMethod,
+      delivery_address:deliveryAddress.trim()||null,
     }).select().single();
     setLoading(false);
     if(error){alert("Error: "+error.message);return;}
@@ -979,8 +982,43 @@ function TakeawayOrderPage({shopSlug}){
           <h3 style={{fontWeight:700,color:C.navy,margin:"0 0 14px",fontSize:16}}>Your details</h3>
           <label style={S.label}>Name *</label>
           <input style={S.input} placeholder="John Smith" value={name} onChange={e=>setName(e.target.value)}/>
-          <label style={S.label}>Car registration</label>
-          <input style={{...S.input,textTransform:"uppercase",fontWeight:700,letterSpacing:3}} placeholder="e.g. AB12 CDE" value={carReg} onChange={e=>setCarReg(e.target.value.toUpperCase())} maxLength={10}/>
+
+          {/* Collection method */}
+          <label style={S.label}>How would you like to collect? *</label>
+          <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+            {[
+              {v:"collection",icon:"🚶",title:"Walk-in collection",desc:"Come inside to collect your order"},
+              {v:"vehicle",icon:"🚗",title:"Vehicle collection",desc:"Stay in your car — we'll bring it out"},
+              {v:"delivery",icon:"🛵",title:"Delivery",desc:"We'll deliver to your address"},
+            ].map(opt=>(
+              <button key={opt.v} onClick={()=>setCollectionMethod(opt.v)}
+                style={{display:"flex",gap:12,alignItems:"center",padding:"12px 14px",borderRadius:12,border:`2px solid ${collectionMethod===opt.v?C.orange:C.border}`,background:collectionMethod===opt.v?"#fff7ed":"#fff",cursor:"pointer",textAlign:"left",fontFamily:"inherit",transition:"all 0.15s"}}>
+                <span style={{fontSize:24,flexShrink:0}}>{opt.icon}</span>
+                <div>
+                  <div style={{fontWeight:700,color:C.navy,fontSize:14}}>{opt.title}</div>
+                  <div style={{fontSize:12,color:C.textMid}}>{opt.desc}</div>
+                </div>
+                {collectionMethod===opt.v&&<span style={{marginLeft:"auto",color:C.orange,fontSize:18,fontWeight:900}}>✓</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* Vehicle reg - only show if vehicle collection */}
+          {collectionMethod==="vehicle"&&(
+            <>
+              <label style={S.label}>Car registration *</label>
+              <input style={{...S.input,textTransform:"uppercase",fontWeight:700,letterSpacing:3}} placeholder="e.g. AB12 CDE" value={carReg} onChange={e=>setCarReg(e.target.value.toUpperCase())} maxLength={10}/>
+            </>
+          )}
+
+          {/* Delivery address - only show if delivery */}
+          {collectionMethod==="delivery"&&(
+            <>
+              <label style={S.label}>Delivery address *</label>
+              <input style={S.input} placeholder="Street, City, Postcode" value={deliveryAddress} onChange={e=>setDeliveryAddress(e.target.value)}/>
+            </>
+          )}
+
           <label style={S.label}>Email (optional)</label>
           <input style={S.input} type="email" placeholder="for order updates" value={email} onChange={e=>setEmail(e.target.value)}/>
           <label style={S.label}>Phone (optional)</label>
@@ -1124,6 +1162,8 @@ function WorkerDashboard({worker,shop,onLogout}){
                   <div style={{fontWeight:800,fontSize:18,color:C.navy}}>#{o.order_number}</div>
                   <div style={{fontWeight:600,color:C.textMid,fontSize:14}}>{o.customer_name}</div>
                   {o.car_registration&&<div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:4,padding:"3px 10px",borderRadius:6,background:"#0d1b4b",color:"#fff",fontSize:13,fontWeight:800,letterSpacing:2}}>🚗 {o.car_registration}</div>}
+              {o.collection_method&&o.collection_method!=="vehicle"&&<div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:4,padding:"3px 10px",borderRadius:6,background:o.collection_method==="delivery"?"#f97316":"#4361ee",color:"#fff",fontSize:12,fontWeight:700}}>{o.collection_method==="delivery"?"🛵 Delivery":"🚶 Collection"}</div>}
+              {o.delivery_address&&<div style={{fontSize:12,color:C.textMid,marginTop:4}}>📍 {o.delivery_address}</div>}
                 </div>
                 <span style={S.badge(STATUS_COLORS[o.status])}>{STATUS_LABELS[o.status]}</span>
               </div>
@@ -1299,7 +1339,6 @@ function BarberAdmin({shop,user,onLogout,onNavigate}){
     <div style={S.app}>
       <div style={S.nav}><div style={S.navInner}>
         <Logo size="nav" onClick={()=>onNavigate("home")}/>
-        <div style={{fontWeight:600,color:C.navy,position:"absolute",left:"50%",transform:"translateX(-50%)",fontSize:14}}>{shop.name}</div>
         <Btn v="outline" size="sm" onClick={onLogout}>Logout</Btn>
       </div></div>
       <div style={{background:C.gradDark,padding:"1.25rem 0"}}>
@@ -1446,21 +1485,27 @@ function TakeawayAdmin({shop,user,onLogout,onNavigate}){
   const pending=orders.filter(o=>o.status==="pending").length;
   const preparing=orders.filter(o=>o.status==="preparing").length;
   const ready=orders.filter(o=>o.status==="ready").length;
+  const [todayRevenue,setTodayRevenue]=useState(0);
+
+  useEffect(()=>{
+    const today=new Date();today.setHours(0,0,0,0);
+    supabase.from("takeaway_orders").select("total_price").eq("shop_id",shop.id).in("status",["ready","collected"]).gte("created_at",today.toISOString())
+      .then(({data})=>setTodayRevenue((data||[]).reduce((s,o)=>s+(o.total_price||0),0)));
+  },[shop.id,orders]);
 
   return (
     <div style={S.app}>
       <div style={S.nav}><div style={S.navInner}>
         <Logo size="nav" onClick={()=>onNavigate("home")}/>
-        <div style={{fontWeight:600,color:C.navy,position:"absolute",left:"50%",transform:"translateX(-50%)",fontSize:14}}>{shop.name}</div>
         <Btn v="outline" size="sm" onClick={onLogout}>Logout</Btn>
       </div></div>
       <div style={{background:"linear-gradient(135deg,#f97316,#ef4444)",padding:"1.25rem 0"}}>
         <div style={S.container}>
           <div style={{marginBottom:"1rem"}}><div style={{color:"rgba(255,255,255,0.6)",fontSize:11,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>🍔 Takeaway Dashboard</div><div style={{color:"#fff",fontSize:18,fontWeight:800}}>{shop.name}</div></div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-            {[{n:pending,l:"Pending"},{n:preparing,l:"Preparing"},{n:ready,l:"Ready"}].map(s=>(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+            {[{n:pending,l:"Pending",c:"#fbbf24"},{n:preparing,l:"Preparing",c:"#a78bfa"},{n:ready,l:"Ready",c:"#34d399"},{n:`£${todayRevenue.toFixed(0)}`,l:"Today",c:"#60a5fa"}].map(s=>(
               <div key={s.l} style={{background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"0.9rem",textAlign:"center"}}>
-                <div style={{fontSize:24,fontWeight:900,color:"#fff"}}>{s.n}</div>
+                <div style={{fontSize:22,fontWeight:900,color:s.c}}>{s.n}</div>
                 <div style={{fontSize:10,color:"rgba(255,255,255,0.6)"}}>{s.l}</div>
               </div>
             ))}
