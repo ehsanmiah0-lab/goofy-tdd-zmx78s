@@ -292,7 +292,7 @@ function HomePage({onNavigate,user}){
               Live Queue Management Platform
             </div>
           </div>
-          <h1 style={{fontSize:"clamp(36px,6.5vw,78px)",fontWeight:900,letterSpacing:"-3px",color:C.obsidian,margin:"0 0 1.5rem",lineHeight:1.0,fontFamily:FONT_DISPLAY}}>
+          <h1 style={{fontSize:"clamp(32px,4.2vw,58px)",fontWeight:900,letterSpacing:"-2px",color:C.obsidian,margin:"0 0 1.5rem",lineHeight:1.05,fontFamily:FONT_DISPLAY}}>
             The operating system<br/>
             <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>for walk-in businesses</span>
           </h1>
@@ -501,7 +501,7 @@ function HomePage({onNavigate,user}){
             <h2 style={{fontSize:"clamp(26px,4vw,48px)",fontWeight:900,letterSpacing:"-2px",color:C.obsidian,margin:"0 0 1rem",lineHeight:1.0,fontFamily:FONT_DISPLAY}}>Serious tools for serious businesses.</h2>
             <p style={{...S.muted,maxWidth:480,margin:"0 auto",fontSize:16}}>We work closely with each business during setup. Access is limited — we're onboarding selected businesses who want to grow.</p>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,maxWidth:860,margin:"0 auto"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,380px))",gap:24,maxWidth:800,margin:"0 auto",justifyContent:"center"}}>
             {[
               {name:"Pro",price:"£29",period:"/month",desc:"For barbers & takeaways ready to run a tighter operation.",features:["1 location","Unlimited staff","Unlimited queue/orders","QR code joining","Email notifications","Daily earnings tracking","Customer ratings","Priority support"],popular:true,cta:"Get early access",ctaV:"primary"},
               {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and growing chains.",features:["Multiple locations","Unlimited staff","Everything in Pro","Multi-location dashboard","Dedicated support","API access"],popular:false,cta:"Talk to us",ctaV:"outline"},
@@ -2446,7 +2446,7 @@ function PricingPage({onNavigate,user}){
       </section>
       <section style={{padding:"2rem 0 5rem"}}>
         <div style={{...S.container,maxWidth:900}}>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:20,marginBottom:"3rem"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,380px))",gap:24,marginBottom:"3rem",justifyContent:"center"}}>
             {[
               {name:"Pro",price:"£29",period:"/month",desc:"For barbers & takeaways ready to run a tighter operation.",features:["1 location","Unlimited staff","Unlimited queue/orders","QR code joining","Email notifications","Daily earnings tracking","Customer ratings","Priority support"],popular:true,cta:"Get early access",ctaV:"grad"},
               {name:"Business",price:"£59",period:"/month",desc:"For multi-location businesses and growing chains.",features:["Multiple locations","Unlimited staff","Everything in Pro","Multi-location dashboard","Dedicated support","API access"],popular:false,cta:"Talk to us",ctaV:"outline"},
