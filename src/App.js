@@ -2467,7 +2467,7 @@ function PricingPage({onNavigate,user}){
 
 // ─── ROOT APP ─────────────────────────────────────────────────
 // ─── OWNER DASHBOARD ─────────────────────────────────────────
-const OWNER_EMAIL = "zentriqflow@gmail.com";
+const OWNER_EMAIL = "ehsanmiah0@gmail.com";
 
 function OwnerDashboard({user,onLogout,onNavigate}){
   const [shops,setShops]=useState([]);
