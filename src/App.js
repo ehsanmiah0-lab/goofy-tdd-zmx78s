@@ -51,11 +51,11 @@ const shadow = {
 const STATUS_COLORS = {
   waiting:"#3d4ff8", called:"#f0a500", on_chair:"#00b882",
   done:"#8b92a9", cancelled:"#e63946",
-  pending:"#f0a500", preparing:"#6c47ff", ready:"#00b882", collected:"#8b92a9",
+  unpaid:"#e63946", pending:"#f0a500", preparing:"#6c47ff", ready:"#00b882", collected:"#8b92a9",
 };
 const STATUS_LABELS = {
   waiting:"Waiting", called:"Called", on_chair:"On Chair", done:"Done", cancelled:"Cancelled",
-  pending:"Pending", preparing:"Preparing", ready:"Ready ✓", collected:"Collected",
+  unpaid:"Awaiting Payment", pending:"Preparing", preparing:"Preparing", ready:"Ready ✓", collected:"Collected",
 };
 
 function fmt(iso){ return new Date(iso).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); }
@@ -973,7 +973,7 @@ function TakeawayOrderPage({shopSlug}){
       car_registration:carReg.trim().toUpperCase()||null,
       items:basket,
       total_price:total,
-      status:"pending",
+      status:"unpaid",
       collection_method:collectionMethod,
       delivery_address:deliveryAddress.trim()||null,
     }).select().single();
@@ -1006,6 +1006,7 @@ function TakeawayOrderPage({shopSlug}){
           <label style={S.label}>How would you like to collect? *</label>
           <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
             {[
+              {v:"eat_in",icon:"🍽️",title:"Eat in",desc:"Sit down and enjoy your order here"},
               {v:"collection",icon:"🚶",title:"Walk-in collection",desc:"Come inside to collect your order"},
               {v:"vehicle",icon:"🚗",title:"Vehicle collection",desc:"Stay in your car — we'll bring it out"},
               {v:"delivery",icon:"🛵",title:"Delivery",desc:"We'll deliver to your address"},
@@ -1110,7 +1111,7 @@ function OrderStatusCard({order}){
     const ch=supabase.channel("order-"+order.id).on("postgres_changes",{event:"UPDATE",schema:"public",table:"takeaway_orders",filter:`id=eq.${order.id}`},({new:n})=>setO(n)).subscribe();
     return ()=>supabase.removeChannel(ch);
   },[order.id]);
-  const steps=["pending","preparing","ready","collected"];
+  const steps=["unpaid","pending","ready","collected"];
   const idx=steps.indexOf(o.status);
   return (
     <div style={{...S.card,marginTop:14}}>
@@ -1167,6 +1168,7 @@ function OrderTrackPage({orderId}){
   const collectionMsg=
     order.collection_method==="vehicle"?"🚗 Stay in your car — we'll bring it out to you":
     order.collection_method==="delivery"?"🛵 We'll deliver to your address":
+    order.collection_method==="eat_in"?"🍽️ Your order will be brought to your table":
     "🚶 Please come inside to collect when ready";
 
   return (
@@ -1179,7 +1181,8 @@ function OrderTrackPage({orderId}){
       </div>
       <div style={{maxWidth:460,margin:"0 auto",padding:"1.5rem"}}>
         {/* Big status banner */}
-        {order.status==="pending"&&<div style={{...S.card,background:"#fffbeb",border:"1px solid #fde68a",textAlign:"center",padding:"1.5rem",marginBottom:14}}><div style={{fontSize:32,marginBottom:8}}>⏳</div><h3 style={{fontWeight:800,color:"#92400e",margin:"0 0 4px"}}>Order received</h3><p style={{color:"#b45309",fontSize:13,margin:0}}>We're getting ready to prepare your order.</p></div>}
+        {order.status==="unpaid"&&<div style={{...S.card,background:"#fef2f2",border:"2px solid #fca5a5",textAlign:"center",padding:"1.75rem",marginBottom:14}}><div style={{fontSize:36,marginBottom:8}}>💳</div><h3 style={{fontWeight:800,color:"#991b1b",margin:"0 0 8px",fontSize:18}}>Please pay at the till</h3><p style={{color:"#b91c1c",fontSize:14,fontWeight:600,margin:0}}>Take your order number to the counter to pay. Your order will start once payment is confirmed.</p></div>}
+        {order.status==="pending"&&<div style={{...S.card,background:"#fffbeb",border:"1px solid #fde68a",textAlign:"center",padding:"1.5rem",marginBottom:14}}><div style={{fontSize:32,marginBottom:8}}>⏳</div><h3 style={{fontWeight:800,color:"#92400e",margin:"0 0 4px"}}>Payment confirmed</h3><p style={{color:"#b45309",fontSize:13,margin:0}}>We're preparing your order now!</p></div>}
         {order.status==="preparing"&&<div style={{...S.card,background:"#f5f3ff",border:"1px solid #c4b5fd",textAlign:"center",padding:"1.5rem",marginBottom:14}}><div style={{fontSize:32,marginBottom:8}}>👨‍🍳</div><h3 style={{fontWeight:800,color:"#5b21b6",margin:"0 0 4px"}}>Being prepared</h3><p style={{color:"#6d28d9",fontSize:13,margin:0}}>Your order is being made right now!</p></div>}
         {order.status==="ready"&&<div style={{...S.card,background:"#f0fdf4",border:"2px solid #86efac",textAlign:"center",padding:"1.75rem",marginBottom:14}}><div style={{fontSize:36,marginBottom:8}}>✅</div><h3 style={{fontWeight:800,color:"#166534",margin:"0 0 8px",fontSize:18}}>Your order is ready!</h3><p style={{color:"#15803d",fontSize:14,fontWeight:600,margin:0}}>{collectionMsg}</p></div>}
         {order.status==="collected"&&<div style={{...S.card,background:"#f0fdf4",border:"1px solid #86efac",textAlign:"center",padding:"1.5rem",marginBottom:14}}><div style={{fontSize:32,marginBottom:8}}>🎉</div><h3 style={{fontWeight:800,color:"#166534",margin:"0 0 4px"}}>Enjoy your food!</h3><p style={{color:"#15803d",fontSize:13,margin:0}}>Order collected. Thanks for ordering!</p></div>}
@@ -1226,7 +1229,7 @@ function WorkerDashboard({worker,shop,onLogout}){
   const [orders,setOrders]=useState([]);
 
   const loadOrders=useCallback(async()=>{
-    const {data}=await supabase.from("takeaway_orders").select("*").eq("shop_id",shop.id).in("status",["pending","preparing","ready"]).order("created_at",{ascending:true});
+    const {data}=await supabase.from("takeaway_orders").select("*").eq("shop_id",shop.id).in("status",["unpaid","pending","preparing","ready"]).order("created_at",{ascending:true});
     setOrders(data||[]);
   },[shop.id]);
 
@@ -1252,7 +1255,7 @@ function WorkerDashboard({worker,shop,onLogout}){
         <div style={S.container}>
           <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,marginBottom:2}}>{worker.name} · Worker Dashboard</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-            {[{n:orders.filter(o=>o.status==="pending").length,l:"Pending"},{n:orders.filter(o=>o.status==="preparing").length,l:"Preparing"},{n:orders.filter(o=>o.status==="ready").length,l:"Ready"}].map(s=>(
+            {[{n:orders.filter(o=>o.status==="unpaid").length,l:"Unpaid",col:"#e63946"},{n:orders.filter(o=>o.status==="pending").length,l:"Preparing"},{n:orders.filter(o=>o.status==="ready").length,l:"Ready"}].map(s=>(
               <div key={s.l} style={{background:"rgba(255,255,255,0.12)",borderRadius:10,padding:"0.75rem",textAlign:"center"}}>
                 <div style={{fontSize:24,fontWeight:900,color:"#fff"}}>{s.n}</div>
                 <div style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{s.l}</div>
@@ -1271,7 +1274,7 @@ function WorkerDashboard({worker,shop,onLogout}){
                   <div style={{fontWeight:800,fontSize:18,color:C.navy}}>#{o.order_number}</div>
                   <div style={{fontWeight:600,color:C.textMid,fontSize:14}}>{o.customer_name}</div>
                   {o.car_registration&&<div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:4,padding:"3px 10px",borderRadius:6,background:"#0d1b4b",color:"#fff",fontSize:13,fontWeight:800,letterSpacing:2}}>🚗 {o.car_registration}</div>}
-              {o.collection_method&&o.collection_method!=="vehicle"&&<div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:4,padding:"3px 10px",borderRadius:6,background:o.collection_method==="delivery"?"#f97316":"#4361ee",color:"#fff",fontSize:12,fontWeight:700}}>{o.collection_method==="delivery"?"🛵 Delivery":"🚶 Collection"}</div>}
+              {o.collection_method&&o.collection_method!=="vehicle"&&<div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:4,padding:"3px 10px",borderRadius:6,background:o.collection_method==="delivery"?"#f97316":o.collection_method==="eat_in"?"#10b981":"#4361ee",color:"#fff",fontSize:12,fontWeight:700}}>{o.collection_method==="delivery"?"🛵 Delivery":o.collection_method==="eat_in"?"🍽️ Eat In":"🚶 Collection"}</div>}
               {o.delivery_address&&<div style={{fontSize:12,color:C.textMid,marginTop:4}}>📍 {o.delivery_address}</div>}
                 </div>
                 <span style={S.badge(STATUS_COLORS[o.status])}>{STATUS_LABELS[o.status]}</span>
@@ -1283,8 +1286,8 @@ function WorkerDashboard({worker,shop,onLogout}){
                 <div style={{fontWeight:700,color:C.obsidian,marginTop:6}}>Total: £{(o.total_price||0).toFixed(2)}</div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {o.status==="pending"&&<Btn v="warning" size="sm" onClick={()=>updateOrder(o.id,"preparing")}>Start preparing</Btn>}
-                {o.status==="preparing"&&<Btn v="success" size="sm" onClick={()=>updateOrder(o.id,"ready")}>Mark ready ✓</Btn>}
+                {o.status==="unpaid"&&<Btn v="danger" size="sm" onClick={()=>updateOrder(o.id,"pending")}>✓ Confirm Payment</Btn>}
+                {o.status==="pending"&&<Btn v="warning" size="sm" onClick={()=>updateOrder(o.id,"ready")}>Mark ready ✓</Btn>}
                 {o.status==="ready"&&<Btn v="primary" size="sm" onClick={()=>updateOrder(o.id,"collected")}>Collected ✓</Btn>}
               </div>
             </div>
@@ -2478,30 +2481,21 @@ function OwnerDashboard({user,onLogout,onNavigate}){
   const [selected,setSelected]=useState(null);
   const [shopDetail,setShopDetail]=useState(null);
   const [detailLoading,setDetailLoading]=useState(false);
-  const [tab,setTab]=useState("overview");
+  const [tab,setTab]=useState("Staff & Services");
+  const [creating,setCreating]=useState(false);
+  const [newShop,setNewShop]=useState({name:"",slug:"",business_type:"barber",postcode:"",area:""});
+  const [createErr,setCreateErr]=useState("");
 
-  // Guard — only owner can see this
   if(!user||user.email!==OWNER_EMAIL){
-    return (
-      <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}}>
-        <div style={{textAlign:"center",padding:"3rem"}}>
-          <div style={{fontSize:48,marginBottom:"1rem"}}>🔒</div>
-          <h2 style={{color:C.obsidian,fontWeight:800}}>Access denied</h2>
-          <p style={{color:C.textMid}}>This page is restricted to the platform owner.</p>
-          <Btn v="primary" onClick={()=>onNavigate("home")} style={{marginTop:"1rem"}}>Go home</Btn>
-        </div>
-      </div>
-    );
+    return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}}><div style={{textAlign:"center",padding:"3rem"}}><div style={{fontSize:48,marginBottom:"1rem"}}>🔒</div><h2 style={{color:C.obsidian,fontWeight:800}}>Access denied</h2><Btn v="primary" onClick={()=>onNavigate("home")} style={{marginTop:"1rem"}}>Go home</Btn></div></div>;
   }
 
   useEffect(()=>{loadAllData();},[]);
 
   async function loadAllData(){
     setLoading(true);
-    // Load all shops with owner info
     const {data:shopData}=await supabase.from("shops").select("*").order("created_at",{ascending:false});
     if(!shopData){setLoading(false);return;}
-    // Load enriched stats for each shop in parallel
     const enriched=await Promise.all(shopData.map(async sh=>{
       const [{count:barberCount},{count:queueTotal},{count:queueActive},{count:orderTotal}]=await Promise.all([
         supabase.from("barbers").select("*",{count:"exact",head:true}).eq("shop_id",sh.id).eq("is_active",true),
@@ -2512,19 +2506,13 @@ function OwnerDashboard({user,onLogout,onNavigate}){
       return {...sh,barberCount:barberCount||0,queueTotal:queueTotal||0,queueActive:queueActive||0,orderTotal:orderTotal||0};
     }));
     setShops(enriched);
-    // Platform-wide stats
-    const totalQ=enriched.reduce((a,s)=>a+s.queueTotal,0);
-    const totalO=enriched.reduce((a,s)=>a+s.orderTotal,0);
-    const totalActive=enriched.reduce((a,s)=>a+s.queueActive,0);
-    setStats({total:enriched.length,barbers:enriched.filter(s=>s.business_type==="barber").length,takeaways:enriched.filter(s=>s.business_type==="takeaway").length,totalQ,totalO,totalActive});
+    setStats({total:enriched.length,barbers:enriched.filter(s=>s.business_type==="barber").length,takeaways:enriched.filter(s=>s.business_type==="takeaway").length,totalQ:enriched.reduce((a,s)=>a+s.queueTotal,0),totalO:enriched.reduce((a,s)=>a+s.orderTotal,0),totalActive:enriched.reduce((a,s)=>a+s.queueActive,0)});
     setLoading(false);
   }
 
   async function loadShopDetail(sh){
-    setSelected(sh);setDetailLoading(true);
-    const [
-      {data:barbers},{data:services},{data:recentQ},{data:recentO},{data:categories},{data:items},{data:reviews}
-    ]=await Promise.all([
+    setSelected(sh);setDetailLoading(true);setTab("Staff & Services");
+    const [{data:barbers},{data:services},{data:recentQ},{data:recentO},{data:categories},{data:items},{data:reviews}]=await Promise.all([
       supabase.from("barbers").select("*").eq("shop_id",sh.id).order("name"),
       supabase.from("services").select("*").eq("shop_id",sh.id).order("name"),
       supabase.from("queue_entries").select("*").eq("shop_id",sh.id).order("joined_at",{ascending:false}).limit(20),
@@ -2537,247 +2525,37 @@ function OwnerDashboard({user,onLogout,onNavigate}){
     setDetailLoading(false);
   }
 
+  async function createShop(){
+    setCreateErr("");
+    if(!newShop.name.trim()||!newShop.slug.trim()) return setCreateErr("Name and slug are required.");
+    const {data,error}=await supabase.from("shops").insert({name:newShop.name.trim(),slug:newShop.slug.trim().toLowerCase().replace(/\s+/g,"-"),business_type:newShop.business_type,postcode:newShop.postcode.trim()||null,area:newShop.area.trim()||null,owner_id:user.id}).select().single();
+    if(error) return setCreateErr(error.message);
+    setCreating(false);setNewShop({name:"",slug:"",business_type:"barber",postcode:"",area:""});
+    loadAllData();
+  }
+
+  async function deleteShop(sh){
+    if(!window.confirm(`Delete "${sh.name}"? This cannot be undone.`)) return;
+    await supabase.from("shops").delete().eq("id",sh.id);
+    loadAllData();
+  }
+
   const filtered=shops.filter(s=>{
-    const matchSearch=s.name.toLowerCase().includes(search.toLowerCase())||(s.area||"").toLowerCase().includes(search.toLowerCase())||(s.postcode||"").toLowerCase().includes(search.toLowerCase());
-    const matchFilter=filter==="all"||(filter==="barber"&&s.business_type==="barber")||(filter==="takeaway"&&s.business_type==="takeaway")||(filter==="active"&&s.queueActive>0);
-    return matchSearch&&matchFilter;
+    const ms=s.name.toLowerCase().includes(search.toLowerCase())||(s.area||"").toLowerCase().includes(search.toLowerCase())||(s.postcode||"").toLowerCase().includes(search.toLowerCase());
+    const mf=filter==="all"||(filter==="barber"&&s.business_type==="barber")||(filter==="takeaway"&&s.business_type==="takeaway")||(filter==="active"&&s.queueActive>0);
+    return ms&&mf;
   });
 
   const fmtDate=iso=>iso?new Date(iso).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"—";
   const fmtDT=iso=>iso?new Date(iso).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
 
   if(selected){
-    return (
-      <div style={{minHeight:"100vh",background:C.bgAlt}}>
-        {/* Header */}
-        <div style={{background:C.obsidian,padding:"1.5rem 2rem",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <button onClick={()=>{setSelected(null);setShopDetail(null);}} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:10,cursor:"pointer",color:"#fff",padding:"8px 14px",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>← Back</button>
-            <div>
-              <div style={{color:"#fff",fontWeight:900,fontSize:20}}>{selected.name}</div>
-              <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:2}}>{selected.business_type} · {selected.slug} · {selected.area||selected.postcode||"No location"}</div>
-            </div>
-          </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <div style={{...S.badge(selected.business_type==="barber"?C.indigo:C.orange),fontSize:12}}>{selected.business_type==="barber"?"💈 Barber":"🍔 Takeaway"}</div>
-            <div style={{...S.badge(C.textLight),fontSize:12}}>Joined {fmtDate(selected.created_at)}</div>
-            {selected.queueActive>0&&<div style={{...S.badge(C.success),fontSize:12}}>🟢 {selected.queueActive} active</div>}
-          </div>
-        </div>
-        {/* Quick stats */}
-        <div style={{background:C.obsidian,borderTop:"1px solid rgba(255,255,255,0.06)",padding:"0 2rem 1.5rem"}}>
-          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
-            {[
-              {l:"Total customers",v:selected.queueTotal+selected.orderTotal},
-              {l:"Active in queue",v:selected.queueActive},
-              {l:"Staff",v:selected.barberCount},
-              {l:"Services",v:shopDetail?.services?.length||"—"},
-              {l:"Menu items",v:shopDetail?.items?.length||"—"},
-              {l:"Reviews",v:shopDetail?.reviews?.length||"—"},
-            ].map(s=>(
-              <div key={s.l} style={{paddingTop:12}}>
-                <div style={{color:"#fff",fontWeight:900,fontSize:22}}>{s.v}</div>
-                <div style={{color:"rgba(255,255,255,0.4)",fontSize:11,fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase",marginTop:2}}>{s.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Tabs */}
-        <div style={{background:C.bgCard,borderBottom:`1px solid ${C.border}`,padding:"0 2rem",display:"flex",gap:0,overflowX:"auto"}}>
-          {(selected.business_type==="barber"?["Staff & Services","Queue History","Reviews","Info"]:["Staff & Menu","Order History","Reviews","Info"]).map(t=>(
-            <button key={t} onClick={()=>setTab(t)} style={{...S.tab(tab===t),whiteSpace:"nowrap"}}>{t}</button>
-          ))}
-        </div>
-        <div style={{maxWidth:1100,margin:"0 auto",padding:"2rem"}}>
-          {detailLoading?<div style={{textAlign:"center",padding:"4rem",color:C.textLight}}>Loading detail…</div>:(
-            <>
-              {/* BARBER: Staff & Services */}
-              {(tab==="Staff & Services"||tab==="Staff & Menu")&&(
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(320px,1fr))",gap:20}}>
-                  <div style={S.card}>
-                    <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>👥 Staff ({shopDetail.barbers.length})</h3>
-                    {shopDetail.barbers.length===0?<p style={S.muted}>No staff added yet.</p>:(
-                      shopDetail.barbers.map(b=>(
-                        <div key={b.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
-                          <div>
-                            <div style={{fontWeight:700,fontSize:14,color:C.obsidian}}>{b.name}</div>
-                            <div style={{...S.muted,fontSize:12}}>PIN: {b.pin} · Earnings today: £{(b.daily_earnings||0).toFixed(2)}</div>
-                          </div>
-                          <span style={{...S.badge(b.is_active?C.success:C.textLight),fontSize:11}}>{b.is_active?"Active":"Inactive"}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {selected.business_type==="barber"?(
-                    <div style={S.card}>
-                      <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>✂️ Services ({shopDetail.services.length})</h3>
-                      {shopDetail.services.length===0?<p style={S.muted}>No services added yet.</p>:(
-                        shopDetail.services.map(s=>(
-                          <div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
-                            <div style={{fontWeight:600,fontSize:14,color:C.text}}>{s.name}</div>
-                            <div style={{display:"flex",gap:12}}>
-                              <span style={{fontWeight:700,color:C.success,fontSize:14}}>£{s.price}</span>
-                              <span style={{color:C.textLight,fontSize:13}}>{s.duration}min</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  ):(
-                    <div style={S.card}>
-                      <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>🍔 Menu ({shopDetail.items.length} items)</h3>
-                      {shopDetail.categories.length===0?<p style={S.muted}>No menu set up yet.</p>:(
-                        shopDetail.categories.map(cat=>(
-                          <div key={cat.id} style={{marginBottom:16}}>
-                            <div style={{fontWeight:800,fontSize:13,color:C.indigo,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>{cat.name}</div>
-                            {shopDetail.items.filter(i=>i.category_id===cat.id).map(i=>(
-                              <div key={i.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${C.border}`}}>
-                                <span style={{fontSize:13,color:C.text}}>{i.name}</span>
-                                <span style={{fontWeight:700,color:C.success,fontSize:13}}>£{i.price}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              {/* Queue / Order history */}
-              {(tab==="Queue History"||tab==="Order History")&&(
-                <div style={S.card}>
-                  <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>
-                    {tab==="Queue History"?"📋 Recent Queue Entries":"📋 Recent Orders"} (last 20)
-                  </h3>
-                  {tab==="Queue History"?(
-                    shopDetail.recentQ.length===0?<p style={S.muted}>No queue entries yet.</p>:(
-                      <div style={{overflowX:"auto"}}>
-                        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-                          <thead>
-                            <tr style={{borderBottom:`2px solid ${C.border}`}}>
-                              {["Customer","Phone","Email","Service","Barber","Status","Joined"].map(h=>(
-                                <th key={h} style={{textAlign:"left",padding:"8px 12px",fontWeight:700,color:C.textMid,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {shopDetail.recentQ.map(e=>(
-                              <tr key={e.id} style={{borderBottom:`1px solid ${C.border}`}}>
-                                <td style={{padding:"10px 12px",fontWeight:600,color:C.text}}>{e.customer_name}</td>
-                                <td style={{padding:"10px 12px",color:C.textMid}}>{e.customer_phone||"—"}</td>
-                                <td style={{padding:"10px 12px",color:C.textMid,fontSize:12}}>{e.customer_email||"—"}</td>
-                                <td style={{padding:"10px 12px",color:C.textMid}}>{e.service_id?"✓":"—"}</td>
-                                <td style={{padding:"10px 12px",color:C.textMid}}>{e.barber_id?"✓":"—"}</td>
-                                <td style={{padding:"10px 12px"}}><span style={{...S.badge(STATUS_COLORS[e.status]||C.textLight),fontSize:11}}>{STATUS_LABELS[e.status]||e.status}</span></td>
-                                <td style={{padding:"10px 12px",color:C.textLight,fontSize:12,whiteSpace:"nowrap"}}>{fmtDT(e.joined_at)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )
-                  ):(
-                    shopDetail.recentO.length===0?<p style={S.muted}>No orders yet.</p>:(
-                      <div style={{overflowX:"auto"}}>
-                        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-                          <thead>
-                            <tr style={{borderBottom:`2px solid ${C.border}`}}>
-                              {["#","Customer","Phone","Method","Total","Status","Date"].map(h=>(
-                                <th key={h} style={{textAlign:"left",padding:"8px 12px",fontWeight:700,color:C.textMid,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {shopDetail.recentO.map(o=>(
-                              <tr key={o.id} style={{borderBottom:`1px solid ${C.border}`}}>
-                                <td style={{padding:"10px 12px",fontWeight:700,color:C.indigo}}>#{o.order_number}</td>
-                                <td style={{padding:"10px 12px",fontWeight:600,color:C.text}}>{o.customer_name}</td>
-                                <td style={{padding:"10px 12px",color:C.textMid}}>{o.customer_phone||"—"}</td>
-                                <td style={{padding:"10px 12px",color:C.textMid,textTransform:"capitalize"}}>{o.collection_method||"—"}</td>
-                                <td style={{padding:"10px 12px",fontWeight:700,color:C.success}}>£{(o.total_price||0).toFixed(2)}</td>
-                                <td style={{padding:"10px 12px"}}><span style={{...S.badge(STATUS_COLORS[o.status]||C.textLight),fontSize:11}}>{STATUS_LABELS[o.status]||o.status}</span></td>
-                                <td style={{padding:"10px 12px",color:C.textLight,fontSize:12,whiteSpace:"nowrap"}}>{fmtDT(o.created_at)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-              {/* Reviews */}
-              {tab==="Reviews"&&(
-                <div style={S.card}>
-                  <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>⭐ Reviews ({shopDetail.reviews.length})</h3>
-                  {shopDetail.reviews.length===0?<p style={S.muted}>No reviews yet.</p>:(
-                    shopDetail.reviews.map(r=>(
-                      <div key={r.id} style={{padding:"1rem 0",borderBottom:`1px solid ${C.border}`}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
-                          <div>
-                            <div style={{fontWeight:700,fontSize:14,color:C.obsidian}}>{r.customer_name}</div>
-                            <Stars rating={r.rating} size={13}/>
-                          </div>
-                          <span style={{color:C.textLight,fontSize:12}}>{fmtDate(r.created_at)}</span>
-                        </div>
-                        {r.review_text&&<p style={{...S.muted,marginTop:8,fontSize:13,fontStyle:"italic"}}>"{r.review_text}"</p>}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-              {/* Info */}
-              {tab==="Info"&&(
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:20}}>
-                  <div style={S.card}>
-                    <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>🏪 Shop Info</h3>
-                    {[
-                      {l:"Name",v:selected.name},{l:"Slug / URL",v:selected.slug},
-                      {l:"Type",v:selected.business_type},{l:"Postcode",v:selected.postcode||"—"},
-                      {l:"Area",v:selected.area||"—"},{l:"Shop ID",v:selected.id},
-                      {l:"Owner ID",v:selected.owner_id},{l:"Created",v:fmtDate(selected.created_at)},
-                    ].map(row=>(
-                      <div key={row.l} style={{display:"flex",gap:16,padding:"9px 0",borderBottom:`1px solid ${C.border}`,flexWrap:"wrap"}}>
-                        <div style={{fontWeight:700,fontSize:12,color:C.textMid,minWidth:100,textTransform:"uppercase",letterSpacing:"0.04em"}}>{row.l}</div>
-                        <div style={{fontSize:13,color:C.text,fontWeight:500,wordBreak:"break-all"}}>{row.v}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={S.card}>
-                    <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>🕐 Opening Hours</h3>
-                    {selected.opening_hours?(
-                      Object.entries(selected.opening_hours).map(([day,hrs])=>(
-                        <div key={day} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
-                          <div style={{fontWeight:600,fontSize:13,color:C.text,textTransform:"capitalize"}}>{day}</div>
-                          <div style={{fontSize:13,color:hrs?.open?C.success:C.textLight}}>{hrs?.open?`${hrs.open} – ${hrs.close}`:"Closed"}</div>
-                        </div>
-                      ))
-                    ):<p style={S.muted}>No hours set.</p>}
-                  </div>
-                  <div style={S.card}>
-                    <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>🔗 Quick links</h3>
-                    {[
-                      {l:selected.business_type==="barber"?"Queue page":"Order page",url:`/${selected.business_type==="barber"?"shop":"order"}/${selected.slug}`},
-                      {l:"Barber login URL",url:`/barber`},
-                    ].map(lk=>(
-                      <div key={lk.l} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
-                        <div style={{fontWeight:700,fontSize:12,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:4}}>{lk.l}</div>
-                        <a href={lk.url} target="_blank" rel="noreferrer" style={{color:C.indigo,fontSize:13,fontWeight:600,wordBreak:"break-all"}}>{window.location.origin}{lk.url}</a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    );
+    const tabs=selected.business_type==="barber"?["Staff & Services","Queue History","Reviews","Info"]:["Staff & Menu","Order History","Reviews","Info"];
+    return <OwnerShopDetail selected={selected} shopDetail={shopDetail} detailLoading={detailLoading} tab={tab} setTab={setTab} tabs={tabs} onBack={()=>{setSelected(null);setShopDetail(null);}} onReload={()=>loadShopDetail(selected)} fmtDate={fmtDate} fmtDT={fmtDT}/>;
   }
 
   return (
     <div style={{minHeight:"100vh",background:C.bgAlt}}>
-      {/* Header */}
       <div style={{background:C.obsidian,padding:"1.5rem 2rem"}}>
         <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -2792,18 +2570,10 @@ function OwnerDashboard({user,onLogout,onNavigate}){
           </div>
         </div>
       </div>
-
-      {/* Platform stats */}
       <div style={{background:C.obsidian,borderTop:"1px solid rgba(255,255,255,0.06)",padding:"0 2rem 2rem"}}>
         <div style={{maxWidth:1280,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:16}}>
-          {[
-            {icon:"🏪",label:"Total businesses",value:stats.total||0,color:C.indigo},
-            {icon:"💈",label:"Barbers",value:stats.barbers||0,color:C.violet},
-            {icon:"🍔",label:"Takeaways",value:stats.takeaways||0,color:C.orange},
-            {icon:"👥",label:"Customers served",value:(stats.totalQ||0)+(stats.totalO||0),color:C.success},
-            {icon:"🟢",label:"Live in queue",value:stats.totalActive||0,color:"#00c48c"},
-          ].map(s=>(
-            <div key={s.label} style={{background:"rgba(255,255,255,0.05)",border:`1px solid rgba(255,255,255,0.07)`,borderRadius:16,padding:"1.25rem",textAlign:"center"}}>
+          {[{icon:"🏪",label:"Total businesses",value:stats.total||0},{icon:"💈",label:"Barbers",value:stats.barbers||0},{icon:"🍔",label:"Takeaways",value:stats.takeaways||0},{icon:"👥",label:"Customers served",value:(stats.totalQ||0)+(stats.totalO||0)},{icon:"🟢",label:"Live in queue",value:stats.totalActive||0}].map(s=>(
+            <div key={s.label} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:16,padding:"1.25rem",textAlign:"center"}}>
               <div style={{fontSize:26,marginBottom:6}}>{s.icon}</div>
               <div style={{fontSize:28,fontWeight:900,color:"#fff"}}>{s.value.toLocaleString()}</div>
               <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",fontWeight:600,letterSpacing:"0.04em",textTransform:"uppercase",marginTop:4}}>{s.label}</div>
@@ -2811,37 +2581,48 @@ function OwnerDashboard({user,onLogout,onNavigate}){
           ))}
         </div>
       </div>
-
-      {/* Toolbar */}
       <div style={{maxWidth:1280,margin:"0 auto",padding:"1.75rem 2rem 0"}}>
         <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",marginBottom:"1.25rem"}}>
           <div style={{flex:1,minWidth:220,position:"relative"}}>
             <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:C.textLight,fontSize:14,pointerEvents:"none"}}>🔍</span>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name, area or postcode…"
-              style={{...S.input,paddingLeft:36,marginBottom:0,fontSize:14}}/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name, area or postcode…" style={{...S.input,paddingLeft:36,marginBottom:0,fontSize:14}}/>
           </div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             {[{v:"all",l:"All"},{v:"barber",l:"💈 Barbers"},{v:"takeaway",l:"🍔 Takeaways"},{v:"active",l:"🟢 Active now"}].map(f=>(
-              <button key={f.v} onClick={()=>setFilter(f.v)}
-                style={{padding:"9px 16px",borderRadius:10,border:`1.5px solid ${filter===f.v?C.indigo:C.border}`,background:filter===f.v?C.indigoLight:"transparent",color:filter===f.v?C.indigo:C.textMid,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT_BODY}}>
-                {f.l}
-              </button>
+              <button key={f.v} onClick={()=>setFilter(f.v)} style={{padding:"9px 16px",borderRadius:10,border:`1.5px solid ${filter===f.v?C.indigo:C.border}`,background:filter===f.v?C.indigoLight:"transparent",color:filter===f.v?C.indigo:C.textMid,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:FONT_BODY}}>{f.l}</button>
             ))}
           </div>
           <Btn v="ghost" size="sm" onClick={loadAllData} style={{color:C.textMid}}>↻ Refresh</Btn>
+          <Btn v="primary" size="sm" onClick={()=>setCreating(true)}>+ Add business</Btn>
         </div>
+        {creating&&(
+          <div style={{...S.card,marginBottom:"1.25rem",border:`2px solid ${C.indigo}`,padding:"1.5rem"}}>
+            <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>➕ Create new business</h3>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12}}>
+              <div><label style={S.label}>Business name *</label><input style={{...S.input,marginBottom:0}} value={newShop.name} onChange={e=>setNewShop({...newShop,name:e.target.value})} placeholder="e.g. The Fade Lab"/></div>
+              <div><label style={S.label}>URL slug *</label><input style={{...S.input,marginBottom:0}} value={newShop.slug} onChange={e=>setNewShop({...newShop,slug:e.target.value})} placeholder="e.g. fade-lab"/></div>
+              <div><label style={S.label}>Type</label>
+                <select style={{...S.input,marginBottom:0}} value={newShop.business_type} onChange={e=>setNewShop({...newShop,business_type:e.target.value})}>
+                  <option value="barber">💈 Barber</option>
+                  <option value="takeaway">🍔 Takeaway</option>
+                </select>
+              </div>
+              <div><label style={S.label}>Postcode</label><input style={{...S.input,marginBottom:0}} value={newShop.postcode} onChange={e=>setNewShop({...newShop,postcode:e.target.value})} placeholder="e.g. E1 6RF"/></div>
+              <div><label style={S.label}>Area</label><input style={{...S.input,marginBottom:0}} value={newShop.area} onChange={e=>setNewShop({...newShop,area:e.target.value})} placeholder="e.g. Shoreditch"/></div>
+            </div>
+            {createErr&&<p style={{color:C.danger,fontSize:13,marginTop:8}}>{createErr}</p>}
+            <div style={{display:"flex",gap:10,marginTop:"1rem"}}>
+              <Btn v="primary" onClick={createShop}>Create business</Btn>
+              <Btn v="outline" onClick={()=>{setCreating(false);setCreateErr("");}}>Cancel</Btn>
+            </div>
+          </div>
+        )}
         <div style={{...S.muted,fontSize:13,marginBottom:"1.25rem"}}>{loading?"Loading…":`Showing ${filtered.length} of ${shops.length} businesses`}</div>
       </div>
-
-      {/* Business list */}
       <div style={{maxWidth:1280,margin:"0 auto",padding:"0 2rem 4rem"}}>
-        {loading?(
-          <div style={{textAlign:"center",padding:"5rem",color:C.textLight}}>Loading all businesses…</div>
-        ):filtered.length===0?(
-          <div style={{textAlign:"center",padding:"5rem",color:C.textLight}}>No businesses found.</div>
-        ):(
+        {loading?<div style={{textAlign:"center",padding:"5rem",color:C.textLight}}>Loading all businesses…</div>:filtered.length===0?<div style={{textAlign:"center",padding:"5rem",color:C.textLight}}>No businesses found.</div>:(
           <div style={{display:"grid",gap:12}}>
-            {filtered.map(sh=><BusinessRow key={sh.id} sh={sh} onSelect={()=>loadShopDetail(sh)} fmtDate={fmtDate}/>)}
+            {filtered.map(sh=><BusinessRow key={sh.id} sh={sh} onSelect={()=>loadShopDetail(sh)} onDelete={()=>deleteShop(sh)} fmtDate={fmtDate}/>)}
           </div>
         )}
       </div>
@@ -2849,12 +2630,12 @@ function OwnerDashboard({user,onLogout,onNavigate}){
   );
 }
 
-function BusinessRow({sh,onSelect,fmtDate}){
+function BusinessRow({sh,onSelect,onDelete,fmtDate}){
   const [h,setH]=useState(false);
   return (
-    <div onClick={onSelect} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
-      style={{...S.card,cursor:"pointer",boxShadow:h?shadow.lg:shadow.sm,borderColor:h?C.borderStrong:C.border,transform:h?"translateY(-1px)":"none",display:"grid",gridTemplateColumns:"1fr auto",gap:16,alignItems:"center"}}>
-      <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
+    <div onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
+      style={{...S.card,boxShadow:h?shadow.lg:shadow.sm,borderColor:h?C.borderStrong:C.border,transform:h?"translateY(-1px)":"none",display:"grid",gridTemplateColumns:"1fr auto",gap:16,alignItems:"center"}}>
+      <div onClick={onSelect} style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",cursor:"pointer",flex:1}}>
         <div style={{width:44,height:44,borderRadius:12,background:sh.business_type==="barber"?C.indigoLight:"rgba(249,115,22,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
           {sh.business_type==="barber"?"💈":"🍔"}
         </div>
@@ -2873,7 +2654,229 @@ function BusinessRow({sh,onSelect,fmtDate}){
         {sh.queueActive>0&&<span style={{...S.badge(C.success),fontSize:11}}>🟢 {sh.queueActive} active</span>}
         <span style={{...S.badge(C.textLight),fontSize:11}}>👥 {sh.barberCount} staff</span>
         <span style={{...S.badge(C.indigo),fontSize:11}}>📋 {sh.queueTotal+sh.orderTotal} total</span>
-        <span style={{fontSize:12,color:C.textMid,fontWeight:600}}>View →</span>
+        <button onClick={onSelect} style={{padding:"7px 14px",borderRadius:9,border:`1px solid ${C.border}`,background:"none",cursor:"pointer",fontSize:13,fontWeight:600,color:C.textMid,fontFamily:FONT_BODY}}>Manage →</button>
+        <button onClick={e=>{e.stopPropagation();onDelete();}} style={{padding:"7px 12px",borderRadius:9,border:`1px solid ${C.danger}30`,background:"none",cursor:"pointer",fontSize:13,color:C.danger,fontFamily:FONT_BODY}}>🗑️</button>
+      </div>
+    </div>
+  );
+}
+
+function OwnerShopDetail({selected,shopDetail,detailLoading,tab,setTab,tabs,onBack,onReload,fmtDate,fmtDT}){
+  // Edit state
+  const [newBar,setNewBar]=useState({name:"",pin:""});
+  const [newSvc,setNewSvc]=useState({name:"",price:"",duration:"30"});
+  const [newWorker,setNewWorker]=useState({name:"",pin:""});
+  const [newCat,setNewCat]=useState("");
+  const [newItem,setNewItem]=useState({name:"",price:"",category_id:"",description:""});
+
+  async function addBarber(){
+    if(!newBar.name.trim()||!newBar.pin) return alert("Name and PIN required");
+    await supabase.from("barbers").insert({shop_id:selected.id,name:newBar.name.trim(),pin:newBar.pin,is_active:true,daily_earnings:0});
+    setNewBar({name:"",pin:""});onReload();
+  }
+  async function deleteBarber(id){if(!window.confirm("Delete staff member?")) return;await supabase.from("barbers").delete().eq("id",id);onReload();}
+  async function toggleBarber(b){await supabase.from("barbers").update({is_active:!b.is_active}).eq("id",b.id);onReload();}
+  async function addService(){
+    if(!newSvc.name.trim()||!newSvc.price) return alert("Name and price required");
+    await supabase.from("services").insert({shop_id:selected.id,name:newSvc.name.trim(),price:parseFloat(newSvc.price),duration:parseInt(newSvc.duration)});
+    setNewSvc({name:"",price:"",duration:"30"});onReload();
+  }
+  async function deleteService(id){if(!window.confirm("Delete service?")) return;await supabase.from("services").delete().eq("id",id);onReload();}
+  async function addCategory(){
+    if(!newCat.trim()) return;
+    await supabase.from("menu_categories").insert({shop_id:selected.id,name:newCat.trim(),sort_order:(shopDetail.categories||[]).length});
+    setNewCat("");onReload();
+  }
+  async function deleteCategory(id){if(!window.confirm("Delete category and all its items?")) return;await supabase.from("menu_items").delete().eq("category_id",id);await supabase.from("menu_categories").delete().eq("id",id);onReload();}
+  async function addItem(){
+    if(!newItem.name.trim()||!newItem.price||!newItem.category_id) return alert("Name, price and category required");
+    await supabase.from("menu_items").insert({shop_id:selected.id,category_id:newItem.category_id,name:newItem.name.trim(),price:parseFloat(newItem.price),description:newItem.description.trim()||null,is_active:true});
+    setNewItem({name:"",price:"",category_id:"",description:""});onReload();
+  }
+  async function deleteItem(id){if(!window.confirm("Delete item?")) return;await supabase.from("menu_items").delete().eq("id",id);onReload();}
+  async function toggleItem(item){await supabase.from("menu_items").update({is_active:!item.is_active}).eq("id",item.id);onReload();}
+
+  const inp={...S.input,marginBottom:8};
+  const addRow={display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",padding:"1rem",background:C.bgAlt,borderRadius:12,marginTop:8};
+
+  return (
+    <div style={{minHeight:"100vh",background:C.bgAlt}}>
+      <div style={{background:C.obsidian,padding:"1.5rem 2rem",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:10,cursor:"pointer",color:"#fff",padding:"8px 14px",fontSize:13,fontWeight:600}}>← Back</button>
+          <div>
+            <div style={{color:"#fff",fontWeight:900,fontSize:20}}>{selected.name}</div>
+            <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:2}}>{selected.business_type} · /{selected.slug} · {selected.area||selected.postcode||"No location"}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <span style={{...S.badge(selected.business_type==="barber"?C.indigo:C.orange),fontSize:12}}>{selected.business_type==="barber"?"💈 Barber":"🍔 Takeaway"}</span>
+          <span style={{...S.badge(C.textLight),fontSize:12}}>Joined {fmtDate(selected.created_at)}</span>
+        </div>
+      </div>
+      <div style={{background:C.bgCard,borderBottom:`1px solid ${C.border}`,padding:"0 2rem",display:"flex",gap:0,overflowX:"auto"}}>
+        {tabs.map(t=><button key={t} onClick={()=>setTab(t)} style={{...S.tab(tab===t),whiteSpace:"nowrap"}}>{t}</button>)}
+      </div>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"2rem"}}>
+        {detailLoading?<div style={{textAlign:"center",padding:"4rem",color:C.textLight}}>Loading…</div>:(
+          <>
+            {(tab==="Staff & Services"||tab==="Staff & Menu")&&(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(340px,1fr))",gap:20}}>
+                {/* Staff panel */}
+                <div style={S.card}>
+                  <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>👥 Staff ({(shopDetail.barbers||[]).length})</h3>
+                  {(shopDetail.barbers||[]).map(b=>(
+                    <div key={b.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:`1px solid ${C.border}`,gap:8}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:14,color:C.obsidian}}>{b.name}</div>
+                        <div style={{...S.muted,fontSize:12}}>PIN: {b.pin} · Earnings: £{(b.daily_earnings||0).toFixed(2)}</div>
+                      </div>
+                      <div style={{display:"flex",gap:6,flexShrink:0}}>
+                        <button onClick={()=>toggleBarber(b)} style={{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:b.is_active?"#dcfce7":"#fee2e2",color:b.is_active?"#166534":"#991b1b"}}>{b.is_active?"Active":"Inactive"}</button>
+                        <button onClick={()=>deleteBarber(b.id)} style={{padding:"5px 8px",borderRadius:7,border:`1px solid ${C.danger}30`,background:"none",cursor:"pointer",fontSize:12,color:C.danger}}>🗑️</button>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={addRow}>
+                    <div style={{flex:1,minWidth:120}}><label style={S.label}>Name</label><input style={inp} value={newBar.name} onChange={e=>setNewBar({...newBar,name:e.target.value})} placeholder="Staff name"/></div>
+                    <div style={{width:80}}><label style={S.label}>PIN</label><input style={inp} type="number" value={newBar.pin} onChange={e=>setNewBar({...newBar,pin:e.target.value})} placeholder="1234" maxLength={4}/></div>
+                    <Btn v="primary" size="sm" onClick={addBarber}>Add staff</Btn>
+                  </div>
+                </div>
+                {/* Services or Menu */}
+                {selected.business_type==="barber"?(
+                  <div style={S.card}>
+                    <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>✂️ Services ({(shopDetail.services||[]).length})</h3>
+                    {(shopDetail.services||[]).map(s=>(
+                      <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.border}`,gap:8}}>
+                        <div><div style={{fontWeight:600,fontSize:14,color:C.text}}>{s.name}</div><div style={{fontSize:12,color:C.textLight}}>{s.duration} min</div></div>
+                        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                          <span style={{fontWeight:700,color:C.success,fontSize:14}}>£{s.price}</span>
+                          <button onClick={()=>deleteService(s.id)} style={{padding:"5px 8px",borderRadius:7,border:`1px solid ${C.danger}30`,background:"none",cursor:"pointer",fontSize:12,color:C.danger}}>🗑️</button>
+                        </div>
+                      </div>
+                    ))}
+                    <div style={addRow}>
+                      <div style={{flex:1,minWidth:100}}><label style={S.label}>Name</label><input style={inp} value={newSvc.name} onChange={e=>setNewSvc({...newSvc,name:e.target.value})} placeholder="e.g. Fade"/></div>
+                      <div style={{width:70}}><label style={S.label}>£ Price</label><input style={inp} type="number" value={newSvc.price} onChange={e=>setNewSvc({...newSvc,price:e.target.value})} placeholder="15"/></div>
+                      <div style={{width:70}}><label style={S.label}>Min</label><input style={inp} type="number" value={newSvc.duration} onChange={e=>setNewSvc({...newSvc,duration:e.target.value})} placeholder="30"/></div>
+                      <Btn v="primary" size="sm" onClick={addService}>Add</Btn>
+                    </div>
+                  </div>
+                ):(
+                  <div style={S.card}>
+                    <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>🍔 Menu categories</h3>
+                    {(shopDetail.categories||[]).map(cat=>(
+                      <div key={cat.id} style={{marginBottom:16}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                          <div style={{fontWeight:800,fontSize:13,color:C.indigo,textTransform:"uppercase",letterSpacing:"0.06em"}}>{cat.name}</div>
+                          <button onClick={()=>deleteCategory(cat.id)} style={{padding:"3px 7px",borderRadius:6,border:`1px solid ${C.danger}30`,background:"none",cursor:"pointer",fontSize:11,color:C.danger}}>🗑️</button>
+                        </div>
+                        {(shopDetail.items||[]).filter(i=>i.category_id===cat.id).map(i=>(
+                          <div key={i.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${C.border}`,gap:8}}>
+                            <div><span style={{fontSize:13,color:C.text}}>{i.name}</span>{i.description&&<span style={{fontSize:11,color:C.textLight,marginLeft:8}}>{i.description}</span>}</div>
+                            <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                              <span style={{fontWeight:700,color:C.success,fontSize:13}}>£{i.price}</span>
+                              <button onClick={()=>toggleItem(i)} style={{padding:"3px 7px",borderRadius:6,border:"none",cursor:"pointer",fontSize:10,fontWeight:700,background:i.is_active?"#dcfce7":"#fee2e2",color:i.is_active?"#166534":"#991b1b"}}>{i.is_active?"On":"Off"}</button>
+                              <button onClick={()=>deleteItem(i.id)} style={{padding:"3px 7px",borderRadius:6,border:`1px solid ${C.danger}30`,background:"none",cursor:"pointer",fontSize:11,color:C.danger}}>🗑️</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                    <div style={{...addRow,flexDirection:"column",gap:8}}>
+                      <div style={{display:"flex",gap:8,width:"100%",alignItems:"center"}}>
+                        <input style={{...inp,flex:1,marginBottom:0}} value={newCat} onChange={e=>setNewCat(e.target.value)} placeholder="New category name"/>
+                        <Btn v="primary" size="sm" onClick={addCategory}>Add category</Btn>
+                      </div>
+                      {(shopDetail.categories||[]).length>0&&<>
+                        <div style={{display:"flex",gap:8,width:"100%",flexWrap:"wrap"}}>
+                          <input style={{...inp,flex:2,minWidth:120,marginBottom:0}} value={newItem.name} onChange={e=>setNewItem({...newItem,name:e.target.value})} placeholder="Item name"/>
+                          <input style={{...inp,width:70,marginBottom:0}} type="number" value={newItem.price} onChange={e=>setNewItem({...newItem,price:e.target.value})} placeholder="£"/>
+                          <input style={{...inp,flex:2,minWidth:120,marginBottom:0}} value={newItem.description} onChange={e=>setNewItem({...newItem,description:e.target.value})} placeholder="Description (optional)"/>
+                          <select style={{...inp,flex:1,minWidth:100,marginBottom:0}} value={newItem.category_id} onChange={e=>setNewItem({...newItem,category_id:e.target.value})}>
+                            <option value="">Category…</option>
+                            {(shopDetail.categories||[]).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                          <Btn v="primary" size="sm" onClick={addItem}>Add item</Btn>
+                        </div>
+                      </>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {(tab==="Queue History"||tab==="Order History")&&(
+              <div style={S.card}>
+                <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>{tab==="Queue History"?"📋 Recent queue entries":"📋 Recent orders"} (last 20)</h3>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                    <thead><tr style={{borderBottom:`2px solid ${C.border}`}}>
+                      {tab==="Queue History"?["Customer","Phone","Email","Status","Joined"].map(h=><th key={h} style={{textAlign:"left",padding:"8px 12px",fontWeight:700,color:C.textMid,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{h}</th>):["#","Customer","Phone","Method","Total","Status","Date"].map(h=><th key={h} style={{textAlign:"left",padding:"8px 12px",fontWeight:700,color:C.textMid,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {tab==="Queue History"?(shopDetail.recentQ||[]).map(e=>(
+                        <tr key={e.id} style={{borderBottom:`1px solid ${C.border}`}}>
+                          <td style={{padding:"10px 12px",fontWeight:600,color:C.text}}>{e.customer_name}</td>
+                          <td style={{padding:"10px 12px",color:C.textMid}}>{e.customer_phone||"—"}</td>
+                          <td style={{padding:"10px 12px",color:C.textMid,fontSize:12}}>{e.customer_email||"—"}</td>
+                          <td style={{padding:"10px 12px"}}><span style={{...S.badge(STATUS_COLORS[e.status]||C.textLight),fontSize:11}}>{STATUS_LABELS[e.status]||e.status}</span></td>
+                          <td style={{padding:"10px 12px",color:C.textLight,fontSize:12,whiteSpace:"nowrap"}}>{fmtDT(e.joined_at)}</td>
+                        </tr>
+                      )):(shopDetail.recentO||[]).map(o=>(
+                        <tr key={o.id} style={{borderBottom:`1px solid ${C.border}`}}>
+                          <td style={{padding:"10px 12px",fontWeight:700,color:C.indigo}}>#{o.order_number}</td>
+                          <td style={{padding:"10px 12px",fontWeight:600,color:C.text}}>{o.customer_name}</td>
+                          <td style={{padding:"10px 12px",color:C.textMid}}>{o.customer_phone||"—"}</td>
+                          <td style={{padding:"10px 12px",color:C.textMid,textTransform:"capitalize"}}>{o.collection_method==="eat_in"?"🍽️ Eat in":o.collection_method||"—"}</td>
+                          <td style={{padding:"10px 12px",fontWeight:700,color:C.success}}>£{(o.total_price||0).toFixed(2)}</td>
+                          <td style={{padding:"10px 12px"}}><span style={{...S.badge(STATUS_COLORS[o.status]||C.textLight),fontSize:11}}>{STATUS_LABELS[o.status]||o.status}</span></td>
+                          <td style={{padding:"10px 12px",color:C.textLight,fontSize:12,whiteSpace:"nowrap"}}>{fmtDT(o.created_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {tab==="Reviews"&&(
+              <div style={S.card}>
+                <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>⭐ Reviews ({(shopDetail.reviews||[]).length})</h3>
+                {(shopDetail.reviews||[]).length===0?<p style={S.muted}>No reviews yet.</p>:(shopDetail.reviews||[]).map(r=>(
+                  <div key={r.id} style={{padding:"1rem 0",borderBottom:`1px solid ${C.border}`}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
+                      <div><div style={{fontWeight:700,fontSize:14,color:C.obsidian}}>{r.customer_name}</div><Stars rating={r.rating} size={13}/></div>
+                      <span style={{color:C.textLight,fontSize:12}}>{fmtDate(r.created_at)}</span>
+                    </div>
+                    {r.review_text&&<p style={{...S.muted,marginTop:8,fontSize:13,fontStyle:"italic"}}>"{r.review_text}"</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {tab==="Info"&&(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:20}}>
+                <div style={S.card}>
+                  <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>🏪 Shop info</h3>
+                  {[{l:"Name",v:selected.name},{l:"Slug / URL",v:"/"+selected.slug},{l:"Type",v:selected.business_type},{l:"Postcode",v:selected.postcode||"—"},{l:"Area",v:selected.area||"—"},{l:"Shop ID",v:selected.id},{l:"Owner ID",v:selected.owner_id},{l:"Created",v:fmtDate(selected.created_at)}].map(row=>(
+                    <div key={row.l} style={{display:"flex",gap:16,padding:"9px 0",borderBottom:`1px solid ${C.border}`,flexWrap:"wrap"}}>
+                      <div style={{fontWeight:700,fontSize:12,color:C.textMid,minWidth:100,textTransform:"uppercase",letterSpacing:"0.04em"}}>{row.l}</div>
+                      <div style={{fontSize:13,color:C.text,fontWeight:500,wordBreak:"break-all"}}>{row.v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={S.card}>
+                  <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>🔗 Customer links</h3>
+                  {[{l:selected.business_type==="barber"?"Queue page":"Order page",url:`/${selected.business_type==="barber"?"shop":"order"}/${selected.slug}`},{l:"Barber login",url:"/barber"}].map(lk=>(
+                    <div key={lk.l} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
+                      <div style={{fontWeight:700,fontSize:12,color:C.textMid,textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:4}}>{lk.l}</div>
+                      <a href={lk.url} target="_blank" rel="noreferrer" style={{color:C.indigo,fontSize:13,fontWeight:600,wordBreak:"break-all"}}>{window.location.origin}{lk.url}</a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
