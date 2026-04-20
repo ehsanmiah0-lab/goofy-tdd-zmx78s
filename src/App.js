@@ -2919,9 +2919,9 @@ export default function App(){
   if(view==="barber-login") return <BarberLogin onNavigate={navigate}/>;
 
   // Auth views
-  if(view==="owner") return <OwnerDashboard user={user} onLogout={()=>{supabase.auth.signOut();setView("home");setUser(null);}} onNavigate={navigate}/>;
+  if(view==="owner"||(view==="admin"&&user?.email===OWNER_EMAIL)) return <OwnerDashboard user={user} onLogout={()=>{supabase.auth.signOut();setView("home");setUser(null);}} onNavigate={navigate}/>;
   if(view==="admin") return <AdminDashboard user={user} onLogout={()=>{supabase.auth.signOut();setView("home");setUser(null);}} onNavigate={navigate}/>;
-  if(view==="login") return <LoginPage onLogin={(u)=>{setUser(u);navigate(u?.email==="zentriqflow@gmail.com"?"owner":"admin");}} onNavigate={navigate}/>;
+  if(view==="login") return <LoginPage onLogin={(u)=>{setUser(u);navigate(u?.email===OWNER_EMAIL?"owner":"admin");}} onNavigate={navigate}/>;
   if(view==="signup") return <SignupPage onLogin={(u)=>{setUser(u);navigate("admin");}} onNavigate={navigate}/>;
 
   // Page views
