@@ -2636,8 +2636,8 @@ function BusinessRow({sh,onSelect,onDelete,fmtDate}){
     <div onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)}
       style={{...S.card,boxShadow:h?shadow.lg:shadow.sm,borderColor:h?C.borderStrong:C.border,transform:h?"translateY(-1px)":"none",display:"grid",gridTemplateColumns:"1fr auto",gap:16,alignItems:"center"}}>
       <div onClick={onSelect} style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",cursor:"pointer",flex:1}}>
-        <div style={{width:44,height:44,borderRadius:12,background:sh.business_type==="barber"?C.indigoLight:"rgba(249,115,22,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
-          {sh.business_type==="barber"?"💈":"🍔"}
+        <div style={{width:44,height:44,borderRadius:12,background:sh.business_type==="barber"?C.indigoLight:sh.business_type==="takeaway"?"rgba(249,115,22,0.1)":"rgba(139,146,169,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+          {sh.business_type==="barber"?"💈":sh.business_type==="takeaway"?"🍔":"🏪"}
         </div>
         <div style={{flex:1,minWidth:120}}>
           <div style={{fontWeight:800,fontSize:15,color:C.obsidian,marginBottom:3}}>{sh.name}</div>
@@ -2857,7 +2857,7 @@ function OwnerShopDetail({selected,shopDetail,detailLoading,tab,setTab,tabs,onBa
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:20}}>
                 <div style={S.card}>
                   <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1.25rem"}}>🏪 Shop info</h3>
-                  {[{l:"Name",v:selected.name},{l:"Slug / URL",v:"/"+selected.slug},{l:"Type",v:selected.business_type},{l:"Postcode",v:selected.postcode||"—"},{l:"Area",v:selected.area||"—"},{l:"Shop ID",v:selected.id},{l:"Owner ID",v:selected.owner_id},{l:"Created",v:fmtDate(selected.created_at)}].map(row=>(
+                  {[{l:"Name",v:selected.name},{l:"Slug / URL",v:"/"+selected.slug},{l:"Type",v:selected.business_type||"⚠️ NOT SET"},{l:"Postcode",v:selected.postcode||"—"},{l:"Area",v:selected.area||"—"},{l:"Shop ID",v:selected.id},{l:"Owner ID",v:selected.owner_id},{l:"Created",v:fmtDate(selected.created_at)}].map(row=>(
                     <div key={row.l} style={{display:"flex",gap:16,padding:"9px 0",borderBottom:`1px solid ${C.border}`,flexWrap:"wrap"}}>
                       <div style={{fontWeight:700,fontSize:12,color:C.textMid,minWidth:100,textTransform:"uppercase",letterSpacing:"0.04em"}}>{row.l}</div>
                       <div style={{fontSize:13,color:C.text,fontWeight:500,wordBreak:"break-all"}}>{row.v}</div>
@@ -2872,6 +2872,14 @@ function OwnerShopDetail({selected,shopDetail,detailLoading,tab,setTab,tabs,onBa
                       <a href={lk.url} target="_blank" rel="noreferrer" style={{color:C.indigo,fontSize:13,fontWeight:600,wordBreak:"break-all"}}>{window.location.origin}{lk.url}</a>
                     </div>
                   ))}
+                </div>
+                <div style={{...S.card,border:`2px solid ${C.warning}40`,background:"#fffbeb"}}>
+                  <h3 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 0.75rem"}}>⚙️ Fix business type</h3>
+                  <p style={{...S.muted,fontSize:13,marginBottom:"1rem"}}>Current stored type: <strong style={{color:C.danger}}>{selected.business_type||"NOT SET"}</strong></p>
+                  <div style={{display:"flex",gap:10}}>
+                    <Btn v="grad" size="sm" onClick={async()=>{await supabase.from("shops").update({business_type:"barber"}).eq("id",selected.id);alert("Updated to barber ✓");onReload();}}>Set as 💈 Barber</Btn>
+                    <Btn v="orange" size="sm" onClick={async()=>{await supabase.from("shops").update({business_type:"takeaway"}).eq("id",selected.id);alert("Updated to takeaway ✓");onReload();}}>Set as 🍔 Takeaway</Btn>
+                  </div>
                 </div>
               </div>
             )}
