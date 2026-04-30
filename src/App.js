@@ -1559,7 +1559,7 @@ function TakeawayAdmin({shop,user,onLogout,onNavigate}){
   const shopUrl=window.location.origin+"/order/"+shop.slug;
 
   const loadOrders=useCallback(async()=>{
-    const {data}=await supabase.from("takeaway_orders").select("*").eq("shop_id",shop.id).in("status",["pending","preparing","ready"]).order("created_at",{ascending:true});
+    const {data}=await supabase.from("takeaway_orders").select("*").eq("shop_id",shop.id).in("status",["unpaid","pending","preparing","ready"]).order("created_at",{ascending:true});
     setOrders(data||[]);
   },[shop.id]);
 
@@ -1568,13 +1568,16 @@ function TakeawayAdmin({shop,user,onLogout,onNavigate}){
     supabase.from("menu_categories").select("*").eq("shop_id",shop.id).then(({data})=>setCategories(data||[]));
     supabase.from("menu_items").select("*").eq("shop_id",shop.id).then(({data})=>setItems(data||[]));
     supabase.from("barbers").select("*").eq("shop_id",shop.id).then(({data})=>setWorkers(data||[]));
-    const ch=supabase.channel("ta-admin-"+shop.id).on("postgres_changes",{event:"*",schema:"public",table:"takeaway_orders",filter:`shop_id=eq.${shop.id}`},loadOrders).subscribe();
+    const ch=supabase.channel("ta-admin-"+shop.id)
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"takeaway_orders",filter:`shop_id=eq.${shop.id}`},()=>loadOrders())
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"takeaway_orders",filter:`shop_id=eq.${shop.id}`},()=>loadOrders())
+      .subscribe();
     return ()=>supabase.removeChannel(ch);
   },[shop.id,loadOrders]);
 
   async function updateOrder(id,status){
     await supabase.from("takeaway_orders").update({status,updated_at:new Date().toISOString()}).eq("id",id);
-    loadOrders();
+    await loadOrders();
   }
 
   async function addCategory(){
@@ -1596,8 +1599,8 @@ function TakeawayAdmin({shop,user,onLogout,onNavigate}){
     setWorkers(w=>[...w,data]); setNWorker(""); setNWorkerPin("");
   }
 
+  const unpaid=orders.filter(o=>o.status==="unpaid").length;
   const pending=orders.filter(o=>o.status==="pending").length;
-  const preparing=orders.filter(o=>o.status==="preparing").length;
   const ready=orders.filter(o=>o.status==="ready").length;
   const [todayRevenue,setTodayRevenue]=useState(0);
 
@@ -1617,7 +1620,7 @@ function TakeawayAdmin({shop,user,onLogout,onNavigate}){
         <div style={S.container}>
           <div style={{marginBottom:"1rem"}}><div style={{color:"rgba(255,255,255,0.6)",fontSize:11,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>🍔 Takeaway Dashboard</div><div style={{color:"#fff",fontSize:18,fontWeight:800}}>{shop.name}</div></div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
-            {[{n:pending,l:"Pending",c:"#fbbf24"},{n:preparing,l:"Preparing",c:"#a78bfa"},{n:ready,l:"Ready",c:"#34d399"},{n:`£${todayRevenue.toFixed(0)}`,l:"Today",c:"#60a5fa"}].map(s=>(
+            {[{n:unpaid,l:"Unpaid",c:"#f87171"},{n:pending,l:"Preparing",c:"#fbbf24"},{n:ready,l:"Ready",c:"#34d399"},{n:`£${todayRevenue.toFixed(0)}`,l:"Today",c:"#60a5fa"}].map(s=>(
               <div key={s.l} style={{background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"0.9rem",textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:900,color:s.c}}>{s.n}</div>
                 <div style={{fontSize:10,color:"rgba(255,255,255,0.6)"}}>{s.l}</div>
@@ -1657,10 +1660,10 @@ function TakeawayAdmin({shop,user,onLogout,onNavigate}){
                   <div style={{fontWeight:700,color:C.obsidian,marginTop:6}}>Total: £{(o.total_price||0).toFixed(2)}</div>
                 </div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {o.status==="pending"&&<Btn v="warning" size="sm" onClick={()=>updateOrder(o.id,"preparing")}>Accept & Prepare</Btn>}
-                  {o.status==="preparing"&&<Btn v="success" size="sm" onClick={()=>updateOrder(o.id,"ready")}>Mark Ready ✓</Btn>}
-                  {o.status==="ready"&&<Btn v="primary" size="sm" onClick={()=>updateOrder(o.id,"collected")}>Collected ✓</Btn>}
-                  <Btn v="danger" size="sm" onClick={()=>updateOrder(o.id,"cancelled")}>Cancel</Btn>
+                  {o.status==="unpaid"&&<Btn v="danger" size="sm" onClick={()=>updateOrder(o.id,"pending")}>💳 Payment Taken</Btn>}
+                  {o.status==="pending"&&<Btn v="warning" size="sm" onClick={()=>updateOrder(o.id,"ready")}>Mark Ready ✓</Btn>}
+                  {o.status==="ready"&&<Btn v="success" size="sm" onClick={()=>updateOrder(o.id,"collected")}>Collected ✓</Btn>}
+                  {o.status!=="collected"&&<Btn v="danger" size="sm" onClick={()=>updateOrder(o.id,"cancelled")}>Cancel</Btn>}
                 </div>
               </div>
             ))}
@@ -1843,9 +1846,14 @@ function CustomerJoin({shopSlug}){
           <label style={S.label}>Preferred barber</label>
           <select style={{...S.input,cursor:"pointer"}} value={barberId} onChange={e=>setBarberId(e.target.value)}>
             <option value="">No preference (auto-assigned)</option>
-            {barbers.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+            {barbers.map(b=><option key={b.id} value={b.id}>{b.name} — {barberQueues[b.id]||0} in queue</option>)}
           </select>
           <Btn v="primary" full size="lg" onClick={joinQueue} disabled={loading} style={{marginTop:4}}>{loading?"Joining…":"Join Queue — No booking needed"}</Btn>
+        </div>
+        <div style={{...S.card,marginTop:14,background:C.obsidian,border:"none",textAlign:"center",padding:"1.5rem"}}>
+          <p style={{color:"rgba(255,255,255,0.45)",fontSize:11,margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:700}}>For business owners</p>
+          <p style={{color:"rgba(255,255,255,0.75)",fontSize:14,margin:"0 0 12px",lineHeight:1.6}}>Manage your own walk-in queue with ZentriqFlow</p>
+          <Btn v="gold" onClick={()=>window.location.href="/signup"} style={{width:"100%",justifyContent:"center"}}>Sign Up Your Business →</Btn>
         </div>
       </div>
     </div>
@@ -2086,10 +2094,13 @@ function BusinessCard({shop,onNavigate}){
         </div>
       )}
       {/* CTA */}
-      <Btn v={isBarber?"grad":"orange"} full size="md"
-        onClick={()=>{ if(isBarber) window.location.href=`/shop/${shop.slug}`; else window.location.href=`/order/${shop.slug}`; }}>
-        {isBarber?"Join queue →":"Order now →"}
-      </Btn>
+      <div style={{display:"flex",gap:8}}>
+        <Btn v="outline" full size="md" onClick={()=>onNavigate("business-detail",null,shop.slug)}>View details</Btn>
+        <Btn v={isBarber?"grad":"orange"} full size="md"
+          onClick={()=>{ if(isBarber) window.location.href=`/shop/${shop.slug}`; else window.location.href=`/order/${shop.slug}`; }}>
+          {isBarber?"Join →":"Order →"}
+        </Btn>
+      </div>
     </div>
   );
 }
@@ -2242,6 +2253,429 @@ function FindBarberPage({onNavigate,user}){
         </div>
       </section>
       <Footer onNavigate={onNavigate}/>
+    </div>
+  );
+}
+
+
+// ─── BUSINESS DETAIL PAGE ────────────────────────────────────
+function BusinessDetailPage({shopSlug,onNavigate}){
+  const [shop,setShop]=useState(null);
+  const [barbers,setBarbers]=useState([]);
+  const [services,setServices]=useState([]);
+  const [reviews,setReviews]=useState([]);
+  const [queues,setQueues]=useState({});
+  const [loading,setLoading]=useState(true);
+
+  useEffect(()=>{
+    async function load(){
+      setLoading(true);
+      const {data:sh}=await supabase.from("shops").select("*").eq("slug",shopSlug).single();
+      if(!sh){setLoading(false);return;}
+      setShop(sh);
+      const [{data:b},{data:sv},{data:rv}]=await Promise.all([
+        supabase.from("barbers").select("*").eq("shop_id",sh.id).eq("is_active",true).order("name"),
+        supabase.from("services").select("*").eq("shop_id",sh.id).order("price"),
+        supabase.from("reviews").select("*").eq("shop_id",sh.id).order("created_at",{ascending:false}).limit(10),
+      ]);
+      setBarbers(b||[]); setServices(sv||[]); setReviews(rv||[]);
+      // Load per-barber queue counts
+      if(b?.length){
+        const qc={};
+        await Promise.all((b||[]).map(async br=>{
+          const {data:q}=await supabase.from("queue_entries").select("id,position,status,customer_name,service_id").eq("barber_id",br.id).in("status",["waiting","called","on_chair"]).order("position");
+          qc[br.id]=q||[];
+        }));
+        setQueues(qc);
+      }
+      setLoading(false);
+    }
+    load();
+    const t=setInterval(async()=>{
+      const {data:b}=await supabase.from("barbers").select("id").eq("shop_id",shop?.id).eq("is_active",true);
+      if(b?.length){
+        const qc={};
+        await Promise.all(b.map(async br=>{
+          const {data:q}=await supabase.from("queue_entries").select("id,position,status,customer_name,service_id").eq("barber_id",br.id).in("status",["waiting","called","on_chair"]).order("position");
+          qc[br.id]=q||[];
+        }));
+        setQueues(qc);
+      }
+    },15000);
+    return ()=>clearInterval(t);
+  },[shopSlug]);
+
+  const isOpen=()=>{
+    if(!shop?.opening_hours) return null;
+    const now=new Date();
+    const days=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+    const today=days[now.getDay()];
+    const hrs=shop.opening_hours[today];
+    if(!hrs?.open) return false;
+    const [oh,om]=hrs.open.split(":").map(Number);
+    const [ch,cm]=hrs.close.split(":").map(Number);
+    const nowMins=now.getHours()*60+now.getMinutes();
+    return nowMins>=oh*60+om&&nowMins<=ch*60+cm;
+  };
+
+  const openStatus=isOpen();
+  const avgRating=reviews.length>0?reviews.reduce((s,r)=>s+r.rating,0)/reviews.length:0;
+  const days=["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+
+  if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:C.textLight}}>Loading…</p></div>;
+  if(!shop) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:C.danger}}>Business not found.</p></div>;
+
+  return (
+    <div style={{...S.app,minHeight:"100vh",background:C.bgAlt}}>
+      <div style={S.nav}><div style={S.navInner}>
+        <Logo size="nav" onClick={()=>onNavigate("find-barber")}/>
+        <button onClick={()=>onNavigate("find-barber")} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:10,cursor:"pointer",padding:"8px 14px",fontSize:13,color:C.textMid,fontFamily:FONT_BODY}}>← Back to search</button>
+      </div></div>
+
+      {/* Hero header */}
+      <div style={{background:`linear-gradient(160deg,${C.obsidian} 0%,${C.navyDeep} 100%)`,padding:"2.5rem 1.5rem 2rem"}}>
+        <div style={{maxWidth:760,margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"flex-start",gap:16,flexWrap:"wrap"}}>
+            <div style={{width:64,height:64,borderRadius:16,background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>
+              {shop.business_type==="barber"?"💈":"🍔"}
+            </div>
+            <div style={{flex:1}}>
+              <h1 style={{color:"#fff",fontSize:26,fontWeight:900,margin:"0 0 6px",letterSpacing:"-0.5px"}}>{shop.name}</h1>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+                {openStatus===true&&<span style={{...S.badge("#00c48c"),fontSize:12}}>🟢 Open now</span>}
+                {openStatus===false&&<span style={{...S.badge("#e63946"),fontSize:12}}>🔴 Closed</span>}
+                {openStatus===null&&<span style={{...S.badge(C.textLight),fontSize:12}}>Hours not set</span>}
+                {shop.area&&<span style={{color:"rgba(255,255,255,0.5)",fontSize:13}}>📍 {shop.area}{shop.postcode?`, ${shop.postcode}`:""}</span>}
+                {avgRating>0&&<span style={{color:"#fbbf24",fontSize:13,fontWeight:700}}>⭐ {avgRating.toFixed(1)} ({reviews.length})</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:760,margin:"0 auto",padding:"1.5rem"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:16}}>
+
+          {/* Live barber queues */}
+          <div style={{...S.card,gridColumn:"1/-1"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
+              <h2 style={{fontWeight:800,fontSize:16,color:C.obsidian,margin:0}}>Live queues</h2>
+              <span style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.success,fontWeight:700}}>
+                <span style={{width:6,height:6,borderRadius:"50%",background:C.success,display:"inline-block"}}/>LIVE
+              </span>
+            </div>
+            {barbers.length===0?<p style={S.muted}>No staff listed yet.</p>:(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12}}>
+                {barbers.map(b=>{
+                  const q=queues[b.id]||[];
+                  const wait=q.length*(services[0]?.duration||20);
+                  return (
+                    <div key={b.id} style={{border:`1.5px solid ${q.length===0?C.success+"40":C.border}`,borderRadius:14,padding:"1rem",background:q.length===0?"rgba(0,196,140,0.04)":"#fff"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <div style={{fontWeight:800,fontSize:14,color:C.obsidian}}>{b.name}</div>
+                        <div style={{fontWeight:900,fontSize:22,color:q.length===0?C.success:C.indigo}}>{q.length}</div>
+                      </div>
+                      <div style={{fontSize:11,fontWeight:600,color:q.length===0?C.success:C.textLight,marginBottom:q.length>0?8:0}}>
+                        {q.length===0?"Available now":`~${wait} min wait`}
+                      </div>
+                      {q.length>0&&(
+                        <div style={{borderTop:`1px solid ${C.border}`,paddingTop:8}}>
+                          {q.slice(0,3).map((e,i)=>(
+                            <div key={e.id} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"3px 0",color:C.textMid}}>
+                              <span>#{e.position} {e.customer_name}</span>
+                              <span style={{...S.badge(STATUS_COLORS[e.status]||C.indigo),fontSize:10}}>{STATUS_LABELS[e.status]}</span>
+                            </div>
+                          ))}
+                          {q.length>3&&<div style={{fontSize:11,color:C.textLight,marginTop:4}}>+{q.length-3} more waiting</div>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div style={{marginTop:"1.25rem"}}>
+              <Btn v="primary" full size="lg" onClick={()=>window.location.href=`/shop/${shop.slug}`} style={{borderRadius:14}}>Join the queue now →</Btn>
+            </div>
+          </div>
+
+          {/* Opening hours */}
+          {shop.opening_hours&&(
+            <div style={S.card}>
+              <h2 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>🕐 Opening hours</h2>
+              {days.map(day=>{
+                const hrs=shop.opening_hours[day];
+                const now=new Date();
+                const todayName=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][now.getDay()];
+                const isToday=day===todayName;
+                return (
+                  <div key={day} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${C.border}`,background:isToday?"rgba(61,79,248,0.03)":"transparent"}}>
+                    <span style={{fontSize:13,fontWeight:isToday?800:500,color:isToday?C.indigo:C.text,textTransform:"capitalize"}}>{day}{isToday?" (today)":""}</span>
+                    <span style={{fontSize:13,fontWeight:600,color:hrs?.open?C.success:C.textLight}}>{hrs?.open?`${hrs.open} – ${hrs.close}`:"Closed"}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Services */}
+          {services.length>0&&(
+            <div style={S.card}>
+              <h2 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>✂️ Services & pricing</h2>
+              {services.map(s=>(
+                <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${C.border}`}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:14,color:C.text}}>{s.name}</div>
+                    <div style={{fontSize:12,color:C.textLight}}>~{s.duration} min</div>
+                  </div>
+                  <div style={{fontWeight:800,fontSize:15,color:C.success}}>£{s.price}</div>
+                </div>
+              ))}
+              <div style={{marginTop:"1rem"}}>
+                <Btn v="grad" full onClick={()=>window.location.href=`/shop/${shop.slug}`}>Book now — no appointment needed</Btn>
+              </div>
+            </div>
+          )}
+
+          {/* Reviews */}
+          {reviews.length>0&&(
+            <div style={{...S.card,gridColumn:"1/-1"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
+                <h2 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:0}}>⭐ Reviews ({reviews.length})</h2>
+                {avgRating>0&&<div style={{fontWeight:900,fontSize:18,color:C.obsidian}}>{avgRating.toFixed(1)} / 5</div>}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
+                {reviews.map(r=>(
+                  <div key={r.id} style={{background:C.bgAlt,borderRadius:12,padding:"14px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                      <span style={{fontWeight:700,fontSize:13,color:C.obsidian}}>{r.customer_name}</span>
+                      <Stars rating={r.rating} size={12}/>
+                    </div>
+                    {r.review_text&&<p style={{...S.muted,fontSize:12,fontStyle:"italic",margin:0}}>"{r.review_text}"</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Final CTA */}
+        <div style={{...S.card,marginTop:16,textAlign:"center",padding:"1.75rem",background:C.obsidian,border:"none"}}>
+          <h3 style={{color:"#fff",fontWeight:800,fontSize:17,margin:"0 0 8px"}}>Ready to skip the wait?</h3>
+          <p style={{color:"rgba(255,255,255,0.55)",fontSize:13,margin:"0 0 16px"}}>Join the queue now from your phone. No app needed.</p>
+          <Btn v="gold" full size="lg" onClick={()=>window.location.href=`/shop/${shop.slug}`} style={{borderRadius:14}}>Join Queue at {shop.name} →</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── BUSINESS DETAIL PAGE ────────────────────────────────────
+function BusinessDetailPage({shopSlug,onNavigate}){
+  const [shop,setShop]=useState(null);
+  const [barbers,setBarbers]=useState([]);
+  const [services,setServices]=useState([]);
+  const [reviews,setReviews]=useState([]);
+  const [queues,setQueues]=useState({});
+  const [loading,setLoading]=useState(true);
+
+  async function loadQueues(bList,shopId){
+    if(!bList?.length) return;
+    const qc={};
+    await Promise.all(bList.map(async br=>{
+      const {data:q}=await supabase.from("queue_entries").select("id,position,status,customer_name").eq("barber_id",br.id).in("status",["waiting","called","on_chair"]).order("position");
+      qc[br.id]=q||[];
+    }));
+    setQueues({...qc});
+  }
+
+  useEffect(()=>{
+    async function load(){
+      setLoading(true);
+      const {data:sh}=await supabase.from("shops").select("*").eq("slug",shopSlug).single();
+      if(!sh){setLoading(false);return;}
+      setShop(sh);
+      const [{data:b},{data:sv},{data:rv}]=await Promise.all([
+        supabase.from("barbers").select("*").eq("shop_id",sh.id).eq("is_active",true).order("name"),
+        supabase.from("services").select("*").eq("shop_id",sh.id).order("price"),
+        supabase.from("reviews").select("*").eq("shop_id",sh.id).order("created_at",{ascending:false}).limit(10),
+      ]);
+      setBarbers(b||[]); setServices(sv||[]); setReviews(rv||[]);
+      await loadQueues(b,sh.id);
+      setLoading(false);
+    }
+    load();
+  },[shopSlug]);
+
+  useEffect(()=>{
+    if(!barbers.length) return;
+    const t=setInterval(()=>loadQueues(barbers),15000);
+    return ()=>clearInterval(t);
+  },[barbers]);
+
+  const isOpenNow2=()=>{
+    if(!shop?.opening_hours) return null;
+    const now=new Date();
+    const days2=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+    const today=days2[now.getDay()];
+    const hrs=shop.opening_hours[today];
+    if(!hrs?.open) return false;
+    const [oh,om]=hrs.open.split(":").map(Number);
+    const [ch,cm]=hrs.close.split(":").map(Number);
+    const nowMins=now.getHours()*60+now.getMinutes();
+    return nowMins>=oh*60+om&&nowMins<=ch*60+cm;
+  };
+
+  const openStatus=isOpenNow2();
+  const avgRating=reviews.length>0?reviews.reduce((s,r)=>s+r.rating,0)/reviews.length:0;
+  const DAYS=["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+
+  if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><p style={{color:C.textLight}}>Loading…</p></div>;
+  if(!shop) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><p style={{color:C.danger}}>Business not found.</p><Btn v="outline" onClick={()=>onNavigate("find-barber")}>Back to search</Btn></div>;
+
+  return (
+    <div style={{...S.app,minHeight:"100vh",background:C.bgAlt}}>
+      <div style={S.nav}><div style={S.navInner}>
+        <Logo size="nav" onClick={()=>onNavigate("find-barber")}/>
+        <button onClick={()=>onNavigate("find-barber")} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:10,cursor:"pointer",padding:"8px 14px",fontSize:13,color:C.textMid,fontFamily:FONT_BODY}}>← Back to search</button>
+      </div></div>
+
+      <div style={{background:`linear-gradient(160deg,${C.obsidian} 0%,${C.navyDeep} 100%)`,padding:"2.5rem 1.5rem 2rem"}}>
+        <div style={{maxWidth:760,margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"flex-start",gap:16,flexWrap:"wrap"}}>
+            <div style={{width:64,height:64,borderRadius:16,background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>
+              {shop.business_type==="barber"?"💈":"🍔"}
+            </div>
+            <div style={{flex:1}}>
+              <h1 style={{color:"#fff",fontSize:26,fontWeight:900,margin:"0 0 8px",letterSpacing:"-0.5px"}}>{shop.name}</h1>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+                {openStatus===true&&<span style={{...S.badge("#00c48c")}}> 🟢 Open now</span>}
+                {openStatus===false&&<span style={{...S.badge("#e63946")}}>🔴 Closed</span>}
+                {shop.area&&<span style={{color:"rgba(255,255,255,0.5)",fontSize:13}}>📍 {shop.area}{shop.postcode?`, ${shop.postcode}`:""}</span>}
+                {avgRating>0&&<span style={{color:"#fbbf24",fontSize:13,fontWeight:700}}>⭐ {avgRating.toFixed(1)} ({reviews.length} review{reviews.length!==1?"s":""})</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:760,margin:"0 auto",padding:"1.5rem"}}>
+        <div style={{display:"grid",gap:16}}>
+
+          {/* Live queues */}
+          <div style={S.card}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
+              <h2 style={{fontWeight:800,fontSize:16,color:C.obsidian,margin:0}}>Live queue</h2>
+              <span style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.success,fontWeight:700}}>
+                <span style={{width:6,height:6,borderRadius:"50%",background:C.success,display:"inline-block"}}/>LIVE · updates every 15s
+              </span>
+            </div>
+            {barbers.length===0?<p style={S.muted}>No staff listed yet.</p>:(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12,marginBottom:"1.25rem"}}>
+                {barbers.map(b=>{
+                  const q=queues[b.id]||[];
+                  const wait=q.length*(services[0]?.duration||20);
+                  return (
+                    <div key={b.id} style={{border:`1.5px solid ${q.length===0?"#00c48c40":C.border}`,borderRadius:14,padding:"1rem",background:q.length===0?"rgba(0,196,140,0.04)":C.bgCard}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                        <div style={{fontWeight:800,fontSize:15,color:C.obsidian}}>{b.name}</div>
+                        <div style={{fontWeight:900,fontSize:24,color:q.length===0?C.success:C.indigo}}>{q.length}</div>
+                      </div>
+                      <div style={{fontSize:12,fontWeight:600,color:q.length===0?C.success:C.textLight,marginBottom:q.length>0?10:0}}>
+                        {q.length===0?"✓ Available now":`~${wait} min wait`}
+                      </div>
+                      {q.length>0&&(
+                        <div style={{borderTop:`1px solid ${C.border}`,paddingTop:8}}>
+                          {q.slice(0,4).map(e=>(
+                            <div key={e.id} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"3px 0"}}>
+                              <span style={{color:C.textMid}}>#{e.position} {e.customer_name}</span>
+                              <span style={{...S.badge(STATUS_COLORS[e.status]||C.indigo),fontSize:10}}>{STATUS_LABELS[e.status]}</span>
+                            </div>
+                          ))}
+                          {q.length>4&&<div style={{fontSize:11,color:C.textLight,marginTop:4}}>+{q.length-4} more</div>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <Btn v="primary" full size="lg" onClick={()=>window.location.href=`/shop/${shop.slug}`} style={{borderRadius:14}}>Join the queue now →</Btn>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16}}>
+            {/* Opening hours */}
+            {shop.opening_hours&&(
+              <div style={S.card}>
+                <h2 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>🕐 Opening hours</h2>
+                {DAYS.map(day=>{
+                  const hrs=shop.opening_hours[day];
+                  const todayName=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][new Date().getDay()];
+                  const isToday=day===todayName;
+                  return (
+                    <div key={day} style={{display:"flex",justifyContent:"space-between",padding:"8px 10px",borderBottom:`1px solid ${C.border}`,borderRadius:isToday?8:0,background:isToday?C.indigoLight:"transparent",marginBottom:isToday?2:0}}>
+                      <span style={{fontSize:13,fontWeight:isToday?800:400,color:isToday?C.indigo:C.text,textTransform:"capitalize"}}>{day}{isToday?" ★":""}</span>
+                      <span style={{fontSize:13,fontWeight:600,color:hrs?.open?C.success:C.textLight}}>{hrs?.open?`${hrs.open} – ${hrs.close}`:"Closed"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Services */}
+            {services.length>0&&(
+              <div style={S.card}>
+                <h2 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:"0 0 1rem"}}>✂️ Services & pricing</h2>
+                {services.map(s=>(
+                  <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
+                    <div>
+                      <div style={{fontWeight:600,fontSize:14,color:C.text}}>{s.name}</div>
+                      <div style={{fontSize:12,color:C.textLight}}>~{s.duration} min</div>
+                    </div>
+                    <div style={{fontWeight:800,fontSize:15,color:C.success}}>£{s.price}</div>
+                  </div>
+                ))}
+                <div style={{marginTop:"1rem"}}>
+                  <Btn v="grad" full onClick={()=>window.location.href=`/shop/${shop.slug}`}>Join queue now →</Btn>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Reviews */}
+          {reviews.length>0&&(
+            <div style={S.card}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
+                <h2 style={{fontWeight:800,fontSize:15,color:C.obsidian,margin:0}}>⭐ Customer reviews</h2>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <Stars rating={Math.round(avgRating)} size={14}/>
+                  <span style={{fontWeight:900,fontSize:16,color:C.obsidian}}>{avgRating.toFixed(1)}</span>
+                  <span style={{color:C.textLight,fontSize:12}}>({reviews.length})</span>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))",gap:12}}>
+                {reviews.map(r=>(
+                  <div key={r.id} style={{background:C.bgAlt,borderRadius:12,padding:"14px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                      <span style={{fontWeight:700,fontSize:13,color:C.obsidian}}>{r.customer_name}</span>
+                      <Stars rating={r.rating} size={12}/>
+                    </div>
+                    {r.review_text&&<p style={{...S.muted,fontSize:12,fontStyle:"italic",margin:0}}>"{r.review_text}"</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Final CTA */}
+          <div style={{...S.card,textAlign:"center",padding:"2rem",background:C.obsidian,border:"none"}}>
+            <h3 style={{color:"#fff",fontWeight:800,fontSize:18,margin:"0 0 8px"}}>Ready to join?</h3>
+            <p style={{color:"rgba(255,255,255,0.5)",fontSize:14,margin:"0 0 16px"}}>No appointment needed. Join from your phone in seconds.</p>
+            <Btn v="gold" full size="lg" onClick={()=>window.location.href=`/shop/${shop.slug}`} style={{borderRadius:14}}>Join Queue at {shop.name} →</Btn>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2915,8 +3349,11 @@ export default function App(){
     return ()=>subscription.unsubscribe();
   },[]);
 
+  const [shopDetailSlug,setShopDetailSlug]=useState("");
+
   function navigate(v,hash,slug){
-    if(slug){window.location.href=`/shop/${slug}`;return;}
+    if(v==="business-detail"&&slug){setShopDetailSlug(slug);setView("business-detail");window.scrollTo({top:0});return;}
+    if(slug&&v!=="business-detail"){window.location.href=`/shop/${slug}`;return;}
     setView(v);
     if(hash) setTimeout(()=>document.getElementById(hash)?.scrollIntoView({behavior:"smooth"}),100);
     window.scrollTo({top:0,behavior:"smooth"});
@@ -2936,6 +3373,7 @@ export default function App(){
   if(view==="signup") return <SignupPage onLogin={(u)=>{setUser(u);navigate("admin");}} onNavigate={navigate}/>;
 
   // Page views
+  if(view==="business-detail") return <BusinessDetailPage shopSlug={shopDetailSlug} onNavigate={navigate}/>;
   if(view==="how-it-works") return <HowItWorksPage onNavigate={navigate} user={user}/>;
   if(view==="faq") return <FaqPage onNavigate={navigate} user={user}/>;
   if(view==="contact") return <ContactPage onNavigate={navigate} user={user}/>;
