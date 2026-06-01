@@ -924,18 +924,21 @@ function TakeawayOrderPage({shopSlug}){
   const [deliveryAddress,setDeliveryAddress]=useState("");
   const [loading,setLoading]=useState(false);
   const [order,setOrder]=useState(null);
+  const [pageLoading,setPageLoading]=useState(true);
+  const [notFound,setNotFound]=useState(false);
 
   useEffect(()=>{
     async function load(){
+      setPageLoading(true);
       const {data:sh}=await supabase.from("shops").select("*").eq("slug",shopSlug).single();
-      if(!sh) return;
+      if(!sh){setNotFound(true);setPageLoading(false);return;}
       setShop(sh);
       const {data:cats}=await supabase.from("menu_categories").select("*").eq("shop_id",sh.id).order("sort_order",{ascending:true});
       setCategories(cats||[]);
       const {data:its}=await supabase.from("menu_items").select("*").eq("shop_id",sh.id).eq("is_active",true);
       setItems(its||[]);
-      // Expand first category
       if(cats&&cats.length) setExpanded({[cats[0].id]:true});
+      setPageLoading(false);
     }
     load();
   },[shopSlug]);
@@ -982,6 +985,21 @@ function TakeawayOrderPage({shopSlug}){
     setOrder(data);
   }
 
+  if(pageLoading) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgAlt,flexDirection:"column",gap:12}}>
+      <div style={{width:40,height:40,border:`3px solid ${C.orange}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      <p style={{color:C.textLight,fontSize:14}}>Loading menu…</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+  if(notFound) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgAlt,flexDirection:"column",gap:12,padding:"2rem",textAlign:"center"}}>
+      <div style={{fontSize:48}}>🔍</div>
+      <h2 style={{color:C.obsidian,fontWeight:800,margin:0}}>Shop not found</h2>
+      <p style={{color:C.textMid}}>This link may be incorrect or the business hasn't been set up yet.</p>
+      <Btn v="primary" onClick={()=>window.location.href="/"}>Go to homepage</Btn>
+    </div>
+  );
   if(order){
     // Redirect to persistent tracking page
     window.location.replace("/track/"+order.id);
@@ -1749,17 +1767,21 @@ function CustomerJoin({shopSlug}){
   const [serviceId,setServiceId]=useState(""); const [barberId,setBarberId]=useState("");
   const [loading,setLoading]=useState(false); const [joined,setJoined]=useState(null);
   const [errors,setErrors]=useState({});
+  const [pageLoading,setPageLoading]=useState(true);
+  const [notFound,setNotFound]=useState(false);
 
   useEffect(()=>{
     async function load(){
+      setPageLoading(true);
       const {data:sh}=await supabase.from("shops").select("*").eq("slug",shopSlug).single();
-      if(!sh) return;
+      if(!sh){setNotFound(true);setPageLoading(false);return;}
       setShop(sh);
       const {data:sv}=await supabase.from("services").select("*").eq("shop_id",sh.id);
       setServices(sv||[]);
       if(sv?.length) setServiceId(sv[0].id);
       const {data:b}=await supabase.from("barbers").select("*").eq("shop_id",sh.id).eq("is_active",true);
       setBarbers(b||[]);
+      setPageLoading(false);
     }
     load();
   },[shopSlug]);
@@ -1767,7 +1789,7 @@ function CustomerJoin({shopSlug}){
   async function joinQueue(){
     const errs={};
     if(!name.trim()) errs.name="Name is required";
-    if(!serviceId) errs.service="Please select a service";
+    if(services.length>0&&!serviceId) errs.service="Please select a service";
     if(Object.keys(errs).length) return setErrors(errs);
     setErrors({});
     const {data:ex}=await supabase.from("queue_entries").select("id").eq("shop_id",shop.id).eq("customer_name",name.trim()).in("status",["waiting","called","on_chair"]);
@@ -1789,6 +1811,23 @@ function CustomerJoin({shopSlug}){
     if(error){alert("Error: "+error.message);return;}
     setJoined(data);
   }
+
+  if(pageLoading) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgAlt,flexDirection:"column",gap:12}}>
+      <div style={{width:40,height:40,border:`3px solid ${C.indigo}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+      <p style={{color:C.textLight,fontSize:14}}>Loading…</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+
+  if(notFound) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgAlt,flexDirection:"column",gap:12,padding:"2rem",textAlign:"center"}}>
+      <div style={{fontSize:48}}>🔍</div>
+      <h2 style={{color:C.obsidian,fontWeight:800,margin:0}}>Shop not found</h2>
+      <p style={{color:C.textMid}}>This link may be incorrect or the business hasn't been set up yet.</p>
+      <Btn v="primary" onClick={()=>window.location.href="/"}>Go to homepage</Btn>
+    </div>
+  );
 
   if(joined){
     const svc=services.find(s=>s.id===joined.service_id);
