@@ -1766,6 +1766,7 @@ function CustomerJoin({shopSlug}){
   const [name,setName]=useState(""); const [phone,setPhone]=useState(""); const [email,setEmail]=useState("");
   const [serviceId,setServiceId]=useState(""); const [barberId,setBarberId]=useState("");
   const [loading,setLoading]=useState(false); const [joined,setJoined]=useState(null);
+  const [barberQueues,setBarberQueues]=useState({});
   const [errors,setErrors]=useState({});
   const [pageLoading,setPageLoading]=useState(true);
   const [notFound,setNotFound]=useState(false);
@@ -1811,6 +1812,25 @@ function CustomerJoin({shopSlug}){
     if(error){alert("Error: "+error.message);return;}
     setJoined(data);
   }
+
+  useEffect(()=>{
+    if(!barbers.length) return;
+    async function lq(){
+      const c={};
+      await Promise.all(barbers.map(async b=>{
+        const {count}=await supabase.from("queue_entries").select("*",{count:"exact",head:true}).eq("barber_id",b.id).in("status",["waiting","called","on_chair"]);
+        c[b.id]=count||0;
+      }));
+      setBarberQueues(c);
+    }
+    lq();
+    const t=setInterval(lq,15000);
+    return ()=>clearInterval(t);
+  },[barbers]);
+
+  const selSvc=services.find(s=>s.id===serviceId);
+  const selBarber=barberId?barbers.find(b=>b.id===barberId):null;
+  const estWait=selBarber?(barberQueues[selBarber.id]||0)*(selSvc?.duration||20):0;
 
   if(pageLoading) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgAlt,flexDirection:"column",gap:12}}>
